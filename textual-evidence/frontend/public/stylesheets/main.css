@@ -1,0 +1,45 @@
+
+#main {
+  font-family: sans-serif;
+  font-size: 1.1em;
+  margin-top: 100px;
+  margin-left: 100px;
+  padding-bottom: 100px;
+}
+
+p {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+table
+{
+  border: 0px;
+  border-collapse:separate;
+  border-spacing:10px 0px;
+  padding: 0px 0px 0px 0px;
+}
+
+.small {
+  font-size: .75em;
+}
+
+.right {
+  text-align: right;
+}
+
+.label {
+  text-align: right;
+  color: #3370E0;
+  padding: 0px .5em 0px 0px;
+}
+
+li {
+  list-style-type: none;
+}
+
+a.uvlink:visited {
+  color: blue;
+}
+  
+  

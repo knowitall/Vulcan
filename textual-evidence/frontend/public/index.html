@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Vulcan Textual Evidence Query</title>
+<script src="assets/javascripts/jquery-1.9.0.min.js" type="text/javascript"></script>
+<link rel="stylesheet" type="text/css" href="assets/stylesheets/main.css">
+<script>
+  var nextPage = 0;
+
+  function query(page) {
+    $.ajax({
+      url: "/api/query",
+      data: {
+        arg1: $("#qArg1")[0].value, 
+        rel:  $("#qRel")[0].value, 
+        arg2: $("#qArg2")[0].value, 
+        kws:  $("#qKw")[0].value,
+        corpus: $("#qCorpus")[0].value,
+        page: page
+      },
+      success: function( data ) {
+        $( "#queryResults" ).html(data);
+        nextPage = page + 1;
+      },
+      error: function ( data ) {
+        $( "#queryResults" ).html(data);
+      }
+    });
+  }
+
+  function queryNext() {
+    query(nextPage);
+  }
+    
+</script>
+</head>
+
+<body>
+<div id="main">
+  <p><strong>Tuple explorer</strong></p>
+  <p>Use the following form to query the underlying store of tuples generated from running
+     <strong><code>OpenIE-4.0</code></strong> over the following corpora:
+     <ul>
+       <li><strong>studyguide</strong>: 
+              Sentences extracted from a 4th grade science study guide.
+       </li>
+       <li><strong>glossary</strong>: 
+              Sentences extracted from the leading paragraphs of Wikipedia entries corresponding
+              to terms extracted from the above studyguide.
+       </li>
+       <li><strong>clueweb</strong>: 
+              Sentences extracted from Clueweb12 matching terms from the above "glossary".
+       </li>
+     </ul>
+  </p>
+  <p>Any combination of arg1, rel, arg2, and keywords fields may be used.  
+     The keywords field matches across <code>concat(arg1, rel, arg2)</code>.</p>
+  <p>*-suffix wildcard searches are supported, e.g. 
+     <pre>(arg1: iron, rel: conduct*)</pre> 
+     will find tuples like <code>(iron, conducts, heat)</code> and 
+     <code>(iron, is a conductor of, electricity)</code></p>
+
+  <br/>
+  <div style="height:1px; width: 50%; border-bottom:solid 1px black; text-align:left" />
+  <br/>
+
+  <div id="query">
+    <table>
+      <tr>
+      <td class="right"><span class="small label">arg1</span></td>
+      <td class="right"><span class="small label">rel</span></td>
+      <td class="right"><span class="small label">arg2</span></td>
+      <td class="right"><span class="small label">keywords</span></td>
+      <td class="right"><span class="small label">corpus</span></td>
+      </tr>
+      <tr> 
+      <td><input id="qArg1" type="text" value="" /></td>
+      <td><input id="qRel" type="text" value="" /></td>
+      <td><input id="qArg2" type="text" value="" /></td>
+      <td><input id="qKw" type="text" value="" /></td>
+      <td><select id="qCorpus">
+            <option value="*">all</option>
+            <option value="studyguide">studyguide</option>
+            <option value="glossary">glossary</option>
+            <option value="clueweb">clueweb</option>
+          </select>
+      </td>
+      <td><button type="button" onclick="query(0)">search</button></td>
+      </tr>
+    </table>
+  </div>  
+
+  <div id="queryResults"/>
+</div>
+    
+</body>
+</html>

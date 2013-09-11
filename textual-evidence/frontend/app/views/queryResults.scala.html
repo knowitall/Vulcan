@@ -1,0 +1,28 @@
+@(results: edu.knowitall.vulcan.query.QueryResult)
+
+@**
+ * Formats QueryResult objects into a html display showing,
+ *  - The total number of results
+ *  - A list of all result tuples, along with the sentences they came from
+ *  - A link to a call to load more results if this page is "full"
+ *@
+
+<p>Found @results.numResults matching tuples</p>
+
+@if(results.results.size > 0) {
+  <ul style="padding: 0">
+  @for(result <- results.results) {
+    <li style="padding-left: 0px; margin-bottom: 10px; margin-left: 1px "><ul style="padding-left: 15px">
+      <li style="padding-left: 0px"> @result.arg1 / @result.rel / @result.arg2s </li>
+      <li style="padding-left: 10px" class="small"> <span class="label">from @result.corpus sentence:</span> @result.sentence </li>
+    </ul></li>
+  }
+  </ul>
+  
+  @if(results.results.size == controllers.QueryHandler.PAGE_SIZE) {
+    <div class="right" style="margin-bottom:50px; padding-bottom:50px">
+      <a class="uvlink" href="#" onclick="queryNext()">More Results</a>
+    </div>
+  }
+} 
+
