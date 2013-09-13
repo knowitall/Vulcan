@@ -47,7 +47,7 @@ case class Relation(terms: Seq[Term],
 trait Arg { } // trait marking types that can be used as arg1/arg2s
 
 case class TermsArg(terms: Seq[Term], 
-                    headword: Option[Term] = None) 
+                    headword: Option[Seq[Term]] = None) 
   extends Arg { }
 
 case class Tuple(arg1: Arg, 

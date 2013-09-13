@@ -84,7 +84,13 @@ object TupleSerialization {
                     Term("helps", Some("help")))),
                   Seq(Tuple(
                       TermsArg(Seq(
-                        Term("foxes", Some("fox")))),
+                        Term("Mister"),
+                        Term("Paws"),
+                        Term("king"),
+                        Term("of"),
+                        Term("the"),
+                        Term("foxes", Some("fox"))),
+                        Some(Seq(Term("Mister"), Term("Paws")))),
                       Relation(Seq(
                         Term("find"))),
                       Seq(TermsArg(Seq(Term("food"))),
