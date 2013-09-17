@@ -8,6 +8,8 @@ crossScalaVersions := Seq("2.10.2", "2.9.3")
 
 scalaVersion <<= crossScalaVersions { (vs: Seq[String]) => vs.head }
 
+resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
+
 resolvers += "Sonatype SNAPSHOTS" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
