@@ -1,0 +1,5 @@
+Xerces apis and impl jar names do not come with the version numbers anymore. 
+
+Somewhere in the dependency tree these jars are needed with the version numbers.
+
+Don't know what is causing the woodstox jar failure. 
