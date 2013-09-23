@@ -14,19 +14,22 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.mln.{TuffyWrapper, MLNInstanceIO}
 import edu.knowitall.vulcan.inference.kb.{Predicate, BinaryRelationTuple}
 import edu.knowitall.vulcan.inference.openie.SolrSearchWrapper
+import edu.knowitall.vulcan.inference.utils.TupleHelper
 
 class PropositionVerifier(finder:EvidenceFinder, tuffy:TuffyWrapper, tempDirectory:String){
 
-  def verify(proposition:Proposition) = {
+  def verify(proposition:Proposition): String = {
     finder.find(proposition) match {
       case Some(evidence:Evidence) => {
         val instance = MLNInstanceIO.fromEvidence(evidence)
         MLNInstanceIO.TuffyFormatter.exportToDirectory(instance, tempDirectory)
         val output = tuffy.runTuffy(tempDirectory)
         println("Output: " + output)
+        output
       }
       case None => {
         println("No evidence found for: " + proposition.text)
+        "No evidence found for: " + proposition.text
       }
     }
   }
@@ -43,9 +46,10 @@ object PropositionVerifier {
     //propositions.foreach(verifier.verify(_))
     val tupleRegex = """\((.*?), (.*?), (.*)\)""".r
     println("Enter Prop[(arg1, rel, arg2)]: ")
+    import TupleHelper._
     for( ln <- io.Source.stdin.getLines ) {
       val tupleRegex(arg1, rel, arg2) = ln
-      val pred = new Predicate(new BinaryRelationTuple(arg1, rel, arg2), 1.0)
+      val pred = new Predicate(from(arg1, rel, arg2), 1.0)
       verifier.verify(new Proposition(Seq[Predicate](), pred))
       println
       println

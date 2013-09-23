@@ -9,13 +9,16 @@ package edu.knowitall.vulcan.inference.mln
  */
 
 import org.slf4j.LoggerFactory
-import scala.collection.JavaConversions._
 import edu.knowitall.vulcan.inference.kb._
 import scala.collection.mutable.ArrayBuffer
-import edu.knowitall.vulcan.inference.kb.Predicate
 import java.io.{PrintWriter, File}
+import edu.knowitall.vulcan.common.Term
+import edu.knowitall.vulcan.common.TermsArg
+import scala.Some
 import edu.knowitall.vulcan.inference.evidence.Evidence
-import edu.knowitall.vulcan.common.{Arg, Tuple}
+import edu.knowitall.vulcan.inference.kb.Predicate
+import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.inference.utils.TupleHelper
 
 case class MLNInstance(query:Seq[Axiom],
                        predicateDefinitions:Seq[Predicate],
@@ -29,14 +32,14 @@ case class MLNInstance(query:Seq[Axiom],
 object MLNInstanceIO{
   val logger = LoggerFactory.getLogger(this.getClass)
 
+  def entityArg = TermsArg(Seq(Term("entity", Some("entity"))))
+
   def toDefinitionTuple(tuple:Tuple) = {
-    val arg1 = new Arg()
-    new Tuple(arg1, rel, arg2s)
+    val relation = tuple.rel
+    new Tuple(entityArg, relation, Seq(entityArg))
   }
-  def toDefinitionPredicate(predicate:Predicate) = {
-    val relation = predicate.tuple.rel
-    new Predicate(new Tuple("entity", relation, "entity"), 1.0)
-  }
+  def toDefinitionPredicate(predicate:Predicate) = new Predicate(toDefinitionTuple(predicate.tuple), 1.0)
+
   def fromEvidence(evidence:Evidence) = {
     val query = Axiom.fromProposition(evidence.proposition)::Nil
     val predicateDefinitions = evidence.axioms.flatMap(axiom => axiom.antecedents.map(x => toDefinitionPredicate(x))).toSet.toSeq
@@ -57,29 +60,30 @@ object MLNInstanceIO{
   def main(args:Array[String]){
     val evidence = new ArrayBuffer[Axiom]()
 
+    import TupleHelper._
     var axioms = Seq[Axiom]()
-    var consequent = new Predicate(new BinaryRelationTuple("iron", "typeOf", "metal"), 0.9)
+    var consequent = new Predicate(from("iron", "typeOf", "metal"), 0.9)
     axioms :+= new Axiom(Seq[Predicate](), consequent, 0.9)
-    consequent = new Predicate(new BinaryRelationTuple("iron_nail", "composedOf", "iron"), 1.0)
+    consequent = new Predicate(from("iron_nail", "composedOf", "iron"), 1.0)
     axioms :+= new Axiom(Seq[Predicate](), consequent, 0.9)
-    val predicateDefinitions = new Predicate(new BinaryRelationTuple("entity", "composedOf", "entity"), 1.0) ::
-      new Predicate(new BinaryRelationTuple("entity", "conductorOf", "entity"), 1.0) ::
-      new Predicate(new BinaryRelationTuple("entity", "typeOf", "entity"), 1.0) :: Nil
+    val predicateDefinitions = new Predicate(from("entity", "composedOf", "entity"), 1.0) ::
+      new Predicate(from("entity", "conductorOf", "entity"), 1.0) ::
+      new Predicate(from("entity", "typeOf", "entity"), 1.0) :: Nil
 
     var program = Seq[WeightedRule]()
     val rule1 = {
-      val antecedents = Seq(new Predicate(new BinaryRelationTuple("a1", "typeOf", "metal"), 1.0))
-      val consequent = new Predicate(new BinaryRelationTuple("a1", "conductorOf", "a2"), 1.0)
+      val antecedents = Seq(new Predicate(from("a1", "typeOf", "metal"), 1.0))
+      val consequent = new Predicate(from("a1", "conductorOf", "a2"), 1.0)
       new WeightedRule(antecedents, consequent, 0.5)
     }
 
     val rule2 = {
       var antecedents = Seq[Predicate]()
-      val ismetal = new Predicate(new BinaryRelationTuple("a2", "typeOf", "metal"), 1.0)
-      val composed = new Predicate(new BinaryRelationTuple("a1", "composedOf", "a2"), 1.0)
+      val ismetal = new Predicate(from("a2", "typeOf", "metal"), 1.0)
+      val composed = new Predicate(from("a1", "composedOf", "a2"), 1.0)
       antecedents :+= ismetal
       antecedents :+= composed
-      val consequent = new Predicate(new BinaryRelationTuple("a1", "conductorOf", "a3"), 1.0)
+      val consequent = new Predicate(from("a1", "conductorOf", "a3"), 1.0)
       new WeightedRule(antecedents, consequent, 0.75)
     }
     program :+= rule1
@@ -91,7 +95,9 @@ object MLNInstanceIO{
   object TuffyFormatter{
 
     def export(p:Predicate, score:Boolean = false) = {
-      val out = "%s(%s, %s)".format(p.tuple.relation, p.tuple.arg1, p.tuple.arg2)
+      val out = "%s(%s, %s)".format(p.tuple.rel.toString,
+                                    p.tuple.arg1,
+                                    p.tuple.arg2s.map(_.toString).mkString(" "))
       score match {
         case false => out
         case true => "%.2f %s".format(p.score(), out)

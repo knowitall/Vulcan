@@ -19,6 +19,7 @@ import java.io.File
 import edu.knowitall.vulcan.inference.kb.Predicate
 import edu.knowitall.openie.Instance
 import scala.Some
+import edu.knowitall.vulcan.inference.utils.TupleHelper._
 
 
 object QuestionIO{
@@ -83,10 +84,10 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
   def consequent: Predicate = c
   def text: String = {
     val astring = aseq.isEmpty match {
-      case false => aseq.map(a => a.tuple.text).mkString(" ")
+      case false => aseq.map(a => tupleText(a.tuple)).mkString(" ")
       case true => ""
     }
-    astring + " " + consequent.tuple.text
+    astring + " " + tupleText(consequent.tuple)
   }
 }
 
@@ -102,7 +103,8 @@ object PropositionIO {
       instances.maxBy(x => x.extraction.rel.text.size)
     }
     val bestInstance = selectInstance(assertion.tuples)
-    val tuple = BinaryRelationTuple.fromExtraction(bestInstance.extraction)
+    val binTuple = BinaryRelationTuple.fromExtraction(bestInstance.extraction)
+    val tuple = from(binTuple.arg1, binTuple.relationText(), binTuple.arg2)
     new Proposition(Seq[Predicate](), new Predicate(tuple, 1.0))
   }
 
@@ -112,7 +114,7 @@ object PropositionIO {
     PropositionIO.fromFile(new File(args(0)))
                  .foreach(proposition => println(proposition.toString))
 
-    val testProposition = new Proposition(Seq[Predicate](), new Predicate(new BinaryRelationTuple("iron_nail", "conductorOf", "electricity"), 1.0))
+    val testProposition = new Proposition(Seq[Predicate](), new Predicate(from("iron_nail", "conductorOf", "electricity"), 1.0))
 
   }
 

@@ -18,6 +18,19 @@ import edu.knowitall.tool.srl.ClearSrl
 import scala.xml.Elem
 import unfiltered.response.ResponseString
 import scopt.mutable.OptionParser
+import scala.util.matching.Regex
+import edu.knowitall.vulcan.inference.kb.Predicate
+import edu.knowitall.vulcan.inference.utils.TupleHelper._
+import scopt.mutable.OptionParser
+import edu.knowitall.openie.Instance
+import scala.Some
+import edu.knowitall.vulcan.inference.kb.Predicate
+import unfiltered.response.ResponseString
+import edu.knowitall.vulcan.inference.proposition.Proposition
+import edu.knowitall.vulcan.inference.evidence.PatternEvidenceFinder
+import edu.knowitall.vulcan.inference.openie.SolrSearchWrapper
+import edu.knowitall.vulcan.inference.mln.TuffyWrapper
+import edu.knowitall.vulcan.inference.apps.PropositionVerifier
 
 object HtmlHelper {
 
@@ -65,15 +78,26 @@ object InferenceFilter {
     if(openie == null) openie = new OpenIE(new ClearParser, new ClearSrl)
   }
 
-  def response(query:String, instances:Seq[Instance]):String = {
+  def response(query:String, result:String):String = {
 
-    def toRow(x:Instance) =  <td>{x.extraction.toString()}</td>
-    val rows = instances.map(toRow(_))
-    val resultsDiv: Elem = <div>{rows}</div>
+    //def toRow(x:Instance) =  <td>{x.extraction.toString()}</td>
+    //val rows = instances.map(toRow(_))
+    val resultsDiv: Elem = <div>{result}</div>
     val queryDiv: Elem = HtmlHelper.queryFormXML(query)
     val html = <html>{queryDiv} {resultsDiv}</html>
     html.toString
   }
+
+  var verifier:PropositionVerifier = null
+
+  def setupVerifier(solrURL:String, tuffyPath:String, tempDir:String) = {
+    val finder = new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
+    val tuffy = TuffyWrapper.instance(tuffyPath)
+    verifier = new PropositionVerifier(finder, tuffy, tempDir)
+
+  }
+
+  val tupleRegex = """\((.*?), (.*?), (.*)\)""".r
 
   def wrapHTML(string:String)  = "<html>" + string + "</html>"
   def wrapXML(string:String)  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" + string
@@ -82,7 +106,10 @@ object InferenceFilter {
     case req @ GET(Path("/openie")) =>{
       if(ReqHelper.has(req, "query")){
         val query = ReqHelper.getQuery(req)
-        val result = openie.extract(query)
+        //val result = openie.extract(query)
+        val tupleRegex(arg1, rel, arg2) = query
+        val pred = new Predicate(from(arg1, rel, arg2), 1.0)
+        val result = verifier.verify(new Proposition(Seq[Predicate](), pred))
         ResponseString(wrapHTML(response(query, result)))
       }else{
         ResponseString(wrapHTML(HtmlHelper.queryFormXML("").toString()))
@@ -93,12 +120,19 @@ object InferenceFilter {
   def main(args:Array[String]){
 
     var port = 8088
+    var solrURL = ""
+    var tuffyPath = ""
+    var tempDir = "./"
     val parser = new OptionParser() {
-      arg("port", "Port to run on.", {str => port = str.toInt})
+      arg("solrURL", "solr url for finding textual evidence.", {str => solrURL = str})
+      arg("tuffyPath", "Tuffy path.", {str => tuffyPath  = str})
+      arg("tempDir", "Temp directory for tuffy.", {str => tempDir = str})
+      opt("p", "port", "Port to run on.", {str => port = str.toInt})
     }
 
     if(parser.parse(args)){
-      setupOpenIe()
+      //setupOpenIe()
+      setupVerifier(solrURL, tuffyPath, tempDir)
       //val port = if (args.size > 0) try {args(0).toInt} catch {case e:NumberFormatException => 8088; case _ => 8088} else 8088
       unfiltered.netty.Http(port).plan(intentVal).run()
     }else{
