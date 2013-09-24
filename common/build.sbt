@@ -1,10 +1,17 @@
+import aether.Aether._
+
+credentials += Credentials("Sonatype Nexus Repository Manager",
+                           "trusty.cs.washington.edu",
+                           "deployment",
+                           "knowit!")
+
 name := "vulcan-common"
 
 organization := "edu.washington.cs.knowitall"
 
 version := "0.2-SNAPSHOT"
 
-scalaVersion := 2.10.2
+scalaVersion := "2.10.2"
 
 resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
 
@@ -20,11 +27,13 @@ scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 homepage := Some(url("https://github.com/knowitall/Vulcan"))
 
-// TODO change this to use the new local repo
 publishTo <<= version { (v: String) =>
+  val nexus = "http://trusty.cs.washington.edu:8082/nexus/content/repositories/"
   if (v.trim.endsWith("SNAPSHOT"))
-    Some(Resolver.file("file", new File("/remote/knowitall-maven/maven2-snapshots")))
+    Some("snapshots" at nexus + "snapshots")
   else
-    Some(Resolver.file("file", new File("/remote/knowitall-maven/maven2")))
+    Some("releases" at nexus + "releases")
 }
+
+seq(aetherSettings: _*)
 
