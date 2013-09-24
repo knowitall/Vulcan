@@ -32,9 +32,7 @@ object TuffyFormatter{
   val implication = "=>"
   val NL = "\n"
 
-  def exportDisjunctions(seq:Seq[Predicate]) = seq.map(exportPredicate(_)).mkString(disjunction)
-
-  def exportAntecedents(seq:Seq[Predicate]) = seq.map(exportPredicate(_)).mkString(",")
+  def exportAntecedents(seq:Seq[Predicate]) = seq.map(exportPredicate(_)).mkString(", ")
 
   def exportRule(axiom:WeightedRule, withWeights:Boolean = false): String = {
     val sb = new StringBuilder
