@@ -34,9 +34,9 @@ import java.io.File
 
 object HtmlHelper {
 
-
+  val formName = "scoreprop"
   def queryFormXML(query: String) = {
-    <form action="openie">
+    <form action={formName}>
       Query:<textarea name="query" cols="80">{query}</textarea>
       <input name="login" type="submit" value="submit"/>
     </form>
@@ -107,9 +107,9 @@ object InferenceFilter {
 
   def wrapHTML(string:String)  = "<html>" + string + "</html>"
   def wrapXML(string:String)  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" + string
+  val scorePropPath = "/" + HtmlHelper.formName
   val intentVal = unfiltered.netty.cycle.Planify {
-
-    case req @ GET(Path("/openie")) =>{
+    case req @ GET(Path(scorePropPath)) =>{
       if(ReqHelper.has(req, "query")){
         val query = ReqHelper.getQuery(req)
         //val result = openie.extract(query)
