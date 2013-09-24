@@ -28,7 +28,7 @@ object Predicate{
   def fromBinaryPredicateString(string:String): Option[Predicate] = {
     try{
       val re(arg1:String, rel:String, arg2:String) = string
-      Some(new Predicate(TupleHelper.from(arg1, rel, arg2), 1.0))
+      Some(new Predicate(TupleHelper.from(arg1.trim, rel.trim, arg2.trim), 1.0))
     } catch{
       case e:Exception => {
         println("Failed to parse binary relation string: " + string)
@@ -41,7 +41,7 @@ case class Predicate(tuple:Tuple, confidence:Double) extends ScoredItem  {
 
   def score() = confidence
 
-  override def toString() = "%.2f %s".format(score(), tuple.toString())
+  override def toString() = "%.2f %s".format(score(), tuple.text)
 }
 
 object Axiom{
