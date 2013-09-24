@@ -1,8 +1,15 @@
+import aether.Aether._
+
+credentials += Credentials("Sonatype Nexus Repository Manager",
+                           "trusty.cs.washington.edu",
+                           "deployment",
+                           "knowit!")
+
 name := "vulcan-te-client"
 
 organization := "edu.washington.cs.knowitall"
 
-version := "0.1-SNAPSHOT"
+version := "0.1"
 
 scalaVersion := "2.10.2"
 
@@ -20,3 +27,13 @@ scalacOptions ++= Seq("-unchecked", "-deprecation")
 connectInput in run := true // forward stdin/out to fork
 
 homepage := Some(url("https://github.com/knowitall/Vulcan"))
+
+publishTo <<= version { (v: String) =>
+  val nexus = "http://trusty.cs.washington.edu:8082/nexus/content/repositories/"
+  if (v.trim.endsWith("SNAPSHOT"))
+    Some("snapshots" at nexus + "snapshots")
+  else
+    Some("releases" at nexus + "releases")
+}
+
+seq(aetherSettings: _*)
