@@ -25,7 +25,7 @@ object WeightedRule{
    * 1000 T(a1, rel, a2); T(b, "composed of", a1) => T(b, rel, a2)
    *
    */
-  val rule_re = """(.*?) (.*?) => (.*)""".r
+  val rule_re = """(.*?) (.*) => (.*)""".r
 
   def fromMLNString(string:String)  = {
     try{
