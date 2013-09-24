@@ -24,7 +24,10 @@ class PatternEvidenceFinder(solr:SolrSearchWrapper) extends EvidenceFinder {
   def find(proposition: Proposition): Option[Evidence] = {
     val text = proposition.text
     logger.info("Searching for: " + text)
-    val predicates = solr.searchSentence(text).map(x => Predicate(TupleHelper.from(x.arg1, x.relationText(), x.arg2), 1.0))
+    val predicates = solr.searchSentence(text)
+                         .map(x => Predicate(TupleHelper.from(""""%s"""".format(x.arg1),
+                                                              """"%s"""".format(x.relationText()),
+                                                              """"%s"""".format(x.arg2)), 1.0))
     logger.info("# predicates found: " + predicates.size)
     predicates.isEmpty match {
       case false => {
