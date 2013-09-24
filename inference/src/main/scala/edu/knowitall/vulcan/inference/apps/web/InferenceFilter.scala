@@ -19,18 +19,18 @@ import scala.xml.Elem
 import unfiltered.response.ResponseString
 import scopt.mutable.OptionParser
 import scala.util.matching.Regex
-import edu.knowitall.vulcan.inference.kb.Predicate
+import edu.knowitall.vulcan.inference.kb.{LogicRules, Predicate}
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
 import scopt.mutable.OptionParser
 import edu.knowitall.openie.Instance
 import scala.Some
-import edu.knowitall.vulcan.inference.kb.Predicate
 import unfiltered.response.ResponseString
 import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.evidence.PatternEvidenceFinder
 import edu.knowitall.vulcan.inference.openie.SolrSearchWrapper
-import edu.knowitall.vulcan.inference.mln.TuffyWrapper
 import edu.knowitall.vulcan.inference.apps.PropositionVerifier
+import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyWrapper
+import java.io.File
 
 object HtmlHelper {
 
@@ -61,6 +61,8 @@ object ReqHelper {
 
 object InferenceFilter {
 
+  val logger = LoggerFactory.getLogger(this.getClass)
+
   def wrapHtml(content:String) = "<html>" + content + "</html>"
 
 
@@ -90,10 +92,14 @@ object InferenceFilter {
 
   var verifier:PropositionVerifier = null
 
-  def setupVerifier(solrURL:String, tuffyPath:String, tempDir:String) = {
+  def setupVerifier(solrURL:String, tuffyPath:String, rulesFile:String, tempDir:String) = {
     val finder = new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
     val tuffy = TuffyWrapper.instance(tuffyPath)
-    verifier = new PropositionVerifier(finder, tuffy, tempDir)
+    val file = new File(rulesFile)
+    val rules = LogicRules.fromFile(file)
+    logger.info("# of rules loaded = %d".format(rules.size) )
+    verifier = new PropositionVerifier(finder, tuffy, rules, tempDir)
+
 
   }
 
@@ -122,17 +128,19 @@ object InferenceFilter {
     var port = 8088
     var solrURL = ""
     var tuffyPath = ""
+    var rulesFile = ""
     var tempDir = "./"
     val parser = new OptionParser() {
       arg("solrURL", "solr url for finding textual evidence.", {str => solrURL = str})
       arg("tuffyPath", "Tuffy path.", {str => tuffyPath  = str})
+      arg("rulesFile", "Logic rules file.", {str => rulesFile  = str})
       arg("tempDir", "Temp directory for tuffy.", {str => tempDir = str})
       opt("p", "port", "Port to run on.", {str => port = str.toInt})
     }
 
     if(parser.parse(args)){
       //setupOpenIe()
-      setupVerifier(solrURL, tuffyPath, tempDir)
+      setupVerifier(solrURL, tuffyPath, rulesFile, tempDir)
       //val port = if (args.size > 0) try {args(0).toInt} catch {case e:NumberFormatException => 8088; case _ => 8088} else 8088
       unfiltered.netty.Http(port).plan(intentVal).run()
     }else{

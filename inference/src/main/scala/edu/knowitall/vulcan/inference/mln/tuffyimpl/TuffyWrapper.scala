@@ -1,4 +1,4 @@
-package edu.knowitall.vulcan.inference.mln
+package edu.knowitall.vulcan.inference.mln.tuffyimpl
 
 /**
  *

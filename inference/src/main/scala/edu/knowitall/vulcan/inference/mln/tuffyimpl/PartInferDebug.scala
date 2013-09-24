@@ -1,4 +1,4 @@
-package edu.knowitall.vulcan.inference.mln
+package edu.knowitall.vulcan.inference.mln.tuffyimpl
 
 /**
  * Created with IntelliJ IDEA.
@@ -17,6 +17,7 @@ import scala.collection.mutable
 import tuffy.mln.Clause
 
 import scala.collection.JavaConversions._
+import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyUtils
 
 
 case class InferenceResults(marginals:Map[String, Double], relevantClauses:Seq[String]){

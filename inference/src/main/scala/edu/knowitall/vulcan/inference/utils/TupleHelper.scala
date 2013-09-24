@@ -9,18 +9,19 @@ package edu.knowitall.vulcan.inference.utils
  */
 
 
-import scala.collection.JavaConversions._
-import edu.knowitall.vulcan.common._
-import edu.knowitall.vulcan.common.Term
-import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.common.Arg
 import edu.knowitall.vulcan.common.Relation
+import edu.knowitall.vulcan.common.Term
 import edu.knowitall.vulcan.common.TermsArg
+import edu.knowitall.vulcan.common.Tuple
 
 object TupleHelper {
 
   def toArgText(arg:Arg): String = arg.text
   def toRelText(rel:Relation): String = rel.terms.map(_.text).mkString(" ")
-  def tupleText(tuple:Tuple) = toArgText(tuple.arg1) + " " + toRelText(tuple.rel) + " " + tuple.arg2s.map(toArgText(_)).mkString(" ")
+  def tupleText(tuple:Tuple) = "%s %s %s".format(toArgText(tuple.arg1),
+                                                 toRelText(tuple.rel),
+                                                 tuple.arg2s.map(toArgText(_)).mkString(" "))
 
   def from(arg1:String, rel:String, arg2:String) = {
     def arg(text:String) = TermsArg(Seq(Term(text)))

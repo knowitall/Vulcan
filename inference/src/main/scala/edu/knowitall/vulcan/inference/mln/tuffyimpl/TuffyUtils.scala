@@ -1,4 +1,4 @@
-package edu.knowitall.vulcan.inference.mln
+package edu.knowitall.vulcan.inference.mln.tuffyimpl
 
 /**
  * Methods imported from Tuffy java library for ease of use.
@@ -19,6 +19,9 @@ import scala.collection.mutable.ArrayBuffer
 
 
 object TuffyUtils {
+
+  def toTuffyLiteral(string: String) = string.replaceAll("[^a-zA-Z0-9 ]", "")
+
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
