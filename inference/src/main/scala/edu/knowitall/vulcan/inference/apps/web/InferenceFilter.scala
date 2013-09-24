@@ -9,20 +9,15 @@ package edu.knowitall.vulcan.inference.apps.web
  */
 
 import org.slf4j.LoggerFactory
-import scala.collection.JavaConversions._
-import unfiltered.request.{GET, Path, Method, HttpRequest}
+import unfiltered.request.{GET, Path, HttpRequest}
 import org.apache.commons.lang.StringEscapeUtils
-import edu.knowitall.openie.{Instance, OpenIE}
+import edu.knowitall.openie.OpenIE
 import edu.knowitall.tool.parse.ClearParser
 import edu.knowitall.tool.srl.ClearSrl
 import scala.xml.Elem
-import unfiltered.response.ResponseString
-import scopt.mutable.OptionParser
-import scala.util.matching.Regex
 import edu.knowitall.vulcan.inference.kb.{LogicRules, Predicate}
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
 import scopt.mutable.OptionParser
-import edu.knowitall.openie.Instance
 import scala.Some
 import unfiltered.response.ResponseString
 import edu.knowitall.vulcan.inference.proposition.Proposition
@@ -31,11 +26,12 @@ import edu.knowitall.vulcan.inference.openie.SolrSearchWrapper
 import edu.knowitall.vulcan.inference.apps.PropositionVerifier
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyWrapper
 import java.io.File
+import unfiltered.netty.cycle.Planify
 
 object HtmlHelper {
 
   val formName = "scoreprop"
-  def queryFormXML(query: String) = {
+  def form(query: String) = {
     <form action={formName}>
       Query:<textarea name="query" cols="80">{query}</textarea>
       <input name="login" type="submit" value="submit"/>
@@ -49,9 +45,9 @@ object ReqHelper {
 
   def getQuery(req:HttpRequest[Any]) = req.parameterValues("query")(0)
 
-  def has(req: HttpRequest[Any], key: String) = req.parameterNames.contains(key)
+  def hasKey(req: HttpRequest[Any], key: String) = req.parameterNames.contains(key)
 
-  def getValue(req:HttpRequest[Any], key:String) = has(req, key) match{
+  def getValue(req:HttpRequest[Any], key:String) = hasKey(req, key) match{
     case true => Some(req.parameterValues(key)(0))
     case false => None
   }
@@ -62,6 +58,9 @@ object ReqHelper {
 object InferenceFilter {
 
   val logger = LoggerFactory.getLogger(this.getClass)
+
+  import HtmlHelper._
+  import ReqHelper._
 
   def wrapHtml(content:String) = "<html>" + content + "</html>"
 
@@ -81,20 +80,17 @@ object InferenceFilter {
   }
 
   def response(query:String, result:String):String = {
-
-    //def toRow(x:Instance) =  <td>{x.extraction.toString()}</td>
-    //val rows = instances.map(toRow(_))
     val resultsDiv: Elem = <div>{result}</div>
-    val queryDiv: Elem = HtmlHelper.queryFormXML(query)
+    val queryDiv: Elem = form(query)
     val html = <html>{queryDiv} {resultsDiv}</html>
     html.toString
   }
 
   var verifier:PropositionVerifier = null
 
-  def setupVerifier(solrURL:String, tuffyPath:String, rulesFile:String, tempDir:String) = {
+  def setup(solrURL:String, tuffyPath:String, rulesFile:String, tempDir:String) = {
     val finder = new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
-    val tuffy = TuffyWrapper.instance(tuffyPath)
+    val tuffy = new TuffyWrapper(tuffyPath)
     val file = new File(rulesFile)
     val rules = LogicRules.fromFile(file)
     logger.info("# of rules loaded = %d".format(rules.size) )
@@ -108,19 +104,20 @@ object InferenceFilter {
   def wrapHTML(string:String)  = "<html>" + string + "</html>"
   def wrapXML(string:String)  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" + string
   val scorePropPath = "/" + HtmlHelper.formName
+
   val intentVal = unfiltered.netty.cycle.Planify {
     case req @ GET(Path(scorePropPath)) =>{
-      if(ReqHelper.has(req, "query")){
-        val query = ReqHelper.getQuery(req)
-        //val result = openie.extract(query)
+      if(hasKey(req, "query")){
+        val query = getQuery(req)
         val tupleRegex(arg1, rel, arg2) = query
         val pred = new Predicate(from(arg1, rel, arg2), 1.0)
         val result = verifier.verify(new Proposition(Seq[Predicate](), pred))
         ResponseString(wrapHTML(response(query, result)))
       }else{
-        ResponseString(wrapHTML(HtmlHelper.queryFormXML("").toString()))
+        ResponseString(wrapHTML(form("").toString()))
       }
     }
+    case _ => ResponseString("Unknown request.")
   }
 
   def main(args:Array[String]){
@@ -139,9 +136,7 @@ object InferenceFilter {
     }
 
     if(parser.parse(args)){
-      //setupOpenIe()
-      setupVerifier(solrURL, tuffyPath, rulesFile, tempDir)
-      //val port = if (args.size > 0) try {args(0).toInt} catch {case e:NumberFormatException => 8088; case _ => 8088} else 8088
+      setup(solrURL, tuffyPath, rulesFile, tempDir)
       unfiltered.netty.Http(port).plan(intentVal).run()
     }else{
       println(parser.usage)

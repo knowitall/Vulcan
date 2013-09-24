@@ -17,7 +17,6 @@ import scala.collection.mutable
 import tuffy.mln.Clause
 
 import scala.collection.JavaConversions._
-import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyUtils
 
 
 case class InferenceResults(marginals:Map[String, Double], relevantClauses:Seq[String]){
@@ -30,7 +29,7 @@ class PartInferDebug extends Infer{
   val logger = LoggerFactory.getLogger(this.getClass)
 
 
-  def run( opt:CommandOptions) = {
+  def run( opt:CommandOptions): InferenceResults = {
 
     UIMan.println(">>> Running partition-aware inference WITH DEBUG")
     setUp(opt)

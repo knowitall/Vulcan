@@ -1,54 +1,75 @@
 package edu.knowitall.vulcan.inference.mln.tuffyimpl
 
-/**
- *
- */
-
 import org.slf4j.LoggerFactory
 import java.io.File
-import scala.io.Source
 import tuffy.parse.CommandOptions
 import tuffy.util.{Config, UIMan}
-import tuffy.main.NonPartInfer
-
 object TuffyWrapper {
+
   val logger = LoggerFactory.getLogger(this.getClass)
-  def instance(path:String) = new TuffyWrapper(path)
-  def main(args:Array[String]) = {
+  def main(args:Array[String])  {
     val tuffy = new TuffyWrapper("")
     tuffy.runTuffyNative(args)
   }
 }
-
 /**
  * Wrapper methods for running Tuffy.
  * External and native.
  */
-class TuffyWrapper(path:String){
+class TuffyWrapper(confFile:String){
 
-  def runTuffyNative(args:Array[String])  {
-    val options: CommandOptions = UIMan.parseCommand(args)
+  val logger = LoggerFactory.getLogger(this.getClass)
+
+  def toTuffyArgs(tempDirectory:String) = {
+    val cfile = new File(confFile)
+    val pfile = new File(tempDirectory + File.separator + "prog.mln")
+    val efile = new File(tempDirectory + File.separator + "evidence.db")
+    val qfile = new File(tempDirectory + File.separator + "query.db")
+    val outfile = new File(tempDirectory + File.separator + "output.txt")
+    "-conf":: cfile.getAbsolutePath ::
+      "-marginal" ::
+      "-i"::pfile.getAbsolutePath ::
+      "-e"::efile.getAbsolutePath ::
+      "-queryFile"::qfile.getAbsolutePath ::
+      "-r"::outfile.getAbsolutePath ::
+      "-printResultsAsPrologFacts":: "-mcsatSamples"::"1000":: "-numInfIters":: "1"::
+      Nil
+  }
+  def runTuffyNative(tempDirectory:String): Option[InferenceResults] = {
+    val args = toTuffyArgs(tempDirectory)
+    runTuffyNative(args.toArray)
+  }
+  def runTuffyNative(args:Array[String]): Option[InferenceResults] = {
     UIMan.println("Running native: " + Config.product_name + "!")
+
+    val options: CommandOptions = UIMan.parseCommand(args)
     if (options == null) {
        println("No valid args specified.")
     }
     (options.isDLearningMode, options.disablePartition) match {
-      case (false, false) => new PartInferDebug().run(options)
-      case (false, true) => new NonPartInfer().run(options)
-      case (true, _) => println("Learning mode not supported in native tuffy.")
+      case (false, false) => Some(new PartInferDebug().run(options))
+      case (false, true) => {
+        logger.error("Non-partition inference mode not supported.")
+        None
+      }
+      case (true, _) => {
+        logger.error("Learning mode not supported in native tuffy.")
+        None
+      }
+
+
     }
 
   }
 
-  def runTuffy(directory:String):String = {
+  /**def runTuffy(directory:String) = {
     val dirPath = new File(directory).getAbsolutePath
     val efile = new File(dirPath + "/evidence.db")
     val pfile = new File(dirPath + "/prog.mln")
     val qfile = new File(dirPath + "/query.db")
     val outfile = new File(dirPath + "/output.txt")
-    import edu.knowitall.vulcan.inference.utils.RunCommandUtil._
-    val args = path + "/tuffy.sh"::
-      "-conf " + path + "/tuffy.conf"::
+    val args = //path + "/tuffy.sh"::
+      "-conf " + confFile ::
       "-marginal" ::
       "-i %s".format(pfile.getAbsolutePath) ::
       "-e %s".format(efile.getAbsolutePath) ::
@@ -56,12 +77,13 @@ class TuffyWrapper(path:String){
       "-r %s".format(outfile.getAbsolutePath) ::
       Nil
     println("Command: " + args.toArray.mkString(" "))
-    val (stdout, stderr) = run(args.toArray)
-    outfile.exists() match {
+    runTuffyNative(args.toArray)
+  }  */
+}
+
+
+//val (stdout, stderr) = run(args.toArray)
+/**outfile.exists() match {
       case true => Source.fromFile(outfile).getLines.mkString("\n")
       case false => stdout + "\n" + stderr
-    }
-  }
-
-
-}
+}  */
