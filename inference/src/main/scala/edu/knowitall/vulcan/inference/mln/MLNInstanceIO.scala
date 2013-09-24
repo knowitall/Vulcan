@@ -32,8 +32,12 @@ object MLNInstanceIO{
   def fromEvidence(evidence:Evidence) = {
     val query = Axiom.fromProposition(evidence.proposition)::Nil
 
-    val predicateDefinitions = evidence.axioms.flatMap(axiom => axiom.antecedents.map(x => toDefinitionPredicate(x))).toSet.toSeq
-    logger.info("Predicate Definitions: " + predicateDefinitions.map(x => x.toString).mkString(" "))
+    val predicateDefinitions = evidence.axioms.flatMap(axiom => {
+      toDefinitionPredicate(axiom.consequent)::Nil ++ axiom.antecedents.map(x => toDefinitionPredicate(x))
+    }).toSet.toSeq
+
+
+    logger.info("Predicate Definitions: " + predicateDefinitions.map(x => x.toString()).mkString("\n"))
     val rules = evidence.rules
     val evid = evidence.axioms.iterator
     new MLNInstance(query, predicateDefinitions, rules, evid)
