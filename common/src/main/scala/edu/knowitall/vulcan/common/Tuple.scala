@@ -1,5 +1,7 @@
 package edu.knowitall.vulcan.common
 
+import edu.knowitall.tool.tokenize.ClearTokenizer
+
 /**
  * Tuple defines the common representation of an arg1-rel-arg2 relation throughout the system,
  * it's built up from a type hierarchy.  
@@ -35,23 +37,75 @@ package edu.knowitall.vulcan.common
  * - context comes from OpenIE-4.0.  I'm not sure exactly what it represents.
  */
 
+/**
+ * Term is just a String token with some Option add-ons: lemma, postag, chunk
+ */
 case class Term(text: String, 
                 lemma: Option[String] = None, 
                 postag: Option[String] = None, 
                 chunk: Option[String] = None)
 
+/**
+ * Relation is a Seq of Terms with Option head Terms, and negation and passive indicators
+ */
 case class Relation(terms: Seq[Term], 
+                    headword: Option[Seq[Term]] = None,
                     negated: Boolean = false, 
-                    passive: Boolean = false)
+                    passive: Boolean = false) 
+{
+  lazy val text = terms map { _.text } mkString(" ")
+}
 
-trait Arg { } // trait marking types that can be used as arg1/arg2s
+/**
+ * Arg is a trait marking types that can be used as arg1 and arg2s
+ */
+sealed trait Arg { 
+  def text: String
+}
 
+/**
+ * TermsArg is an Arg that consists of a Sequence of Terms, with Option headword Terms
+ */
 case class TermsArg(terms: Seq[Term], 
                     headword: Option[Seq[Term]] = None) 
-  extends Arg { }
+  extends Arg
+{ 
+  lazy val text = terms map { _.text } mkString(" ")
+}
 
+/**
+ * Tuple is an arg1 - rel - arg2s relation, with Option context Terms.  Tuple is also
+ * an Arg, that is it can serve the place of an Arg to another Tuple.
+ */
 case class Tuple(arg1: Arg, 
                  rel: Relation, 
                  arg2s: Seq[Arg] = Nil, 
-                 context: Option[String] = None) 
-  extends Arg { }
+                 context: Option[Seq[Term]] = None)  
+  extends Arg 
+{ 
+  lazy val text = arg1.text + " " + 
+                  rel.text + " " + 
+                  arg2s.map { _.text } mkString(" ")
+}
+
+/**
+ * Include some utility helpers for making tuples out of plain strings
+ */
+object Tuple {
+ 
+  private val tokenizer = new ClearTokenizer()
+
+  /**
+   * Utility constructor for making a Tuple out of bare Strings 
+   * for arg1, rel, and arg2s
+   */
+  def makeTuple(arg1: String, rel: String, arg2s: String*) : Tuple = {
+    Tuple(TermsArg(makeTerms(arg1)),
+          Relation(makeTerms(rel)),
+          arg2s map { arg2 => TermsArg(makeTerms(arg2)) })
+  }
+
+  private def makeTerms(text: String) : Seq[Term] = {
+    tokenizer.tokenize(text) map { _.string } map { string => Term(string) }
+  }
+}

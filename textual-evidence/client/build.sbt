@@ -5,25 +5,30 @@ credentials += Credentials("Sonatype Nexus Repository Manager",
                            "deployment",
                            "knowit!")
 
-name := "vulcan-common"
+name := "vulcan-te-client"
 
 organization := "edu.washington.cs.knowitall"
 
-version := "0.2-SNAPSHOT"
+version := "0.1"
 
 scalaVersion := "2.10.2"
 
-resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
-
-libraryDependencies ++= Seq(
-  // for play.api.libs.json serialization
-  // play 2.2 is supposed to break-out play-json as a separate pacakge.
-  // until then we take the whole thing
-  "play" %% "play" % "2.1.3",
-  "edu.washington.cs.knowitall.nlptools" %% "nlptools-tokenize-clear" % "2.4.2"
+resolvers ++= Seq(
+  "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
+  "Trusty Snapshots" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/snapshots",
+  "Trusty Releases" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/releases"
 )
 
+libraryDependencies ++= Seq(
+  "play" %% "play" % "2.1.3",
+  "net.databinder.dispatch" %% "dispatch-core" % "0.11.0",
+  "edu.washington.cs.knowitall" %% "vulcan-common" % "0.2-SNAPSHOT",
+  "com.github.scopt" %% "scopt" % "2.1"
+) 
+
 scalacOptions ++= Seq("-unchecked", "-deprecation")
+
+connectInput in run := true // forward stdin/out to fork
 
 homepage := Some(url("https://github.com/knowitall/Vulcan"))
 
@@ -36,4 +41,3 @@ publishTo <<= version { (v: String) =>
 }
 
 seq(aetherSettings: _*)
-

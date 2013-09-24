@@ -1,4 +1,10 @@
-package edu.knowitall.vulcan.common
+package edu.knowitall.vulcan.common.serialization
+
+import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.common.Arg
+import edu.knowitall.vulcan.common.Term
+import edu.knowitall.vulcan.common.Relation
+import edu.knowitall.vulcan.common.TermsArg
 
 /**
  * Serializes and deserialized Tuples as Json
@@ -7,7 +13,7 @@ object TupleSerialization {
 
   import play.api.libs.json._
 
-  // play's json library defines a bunch of macros for auto-serialization
+  // play's json library defines a bunch of macros for auto-serialization of simple types
   implicit val termReader = Json.reads[Term]
   implicit val termWriter = Json.writes[Term]
 
@@ -18,8 +24,8 @@ object TupleSerialization {
   implicit val termsWriter = Json.writes[TermsArg]
 
   /* 
-   * Define custom json reader/writer logic for Args, which dispatches 
-   * to the appropriate readers/writers based on type.
+   * Define custom json reader/writer logic for Args, which invokes 
+   * the appropriate readers/writers based on type.
    */
   implicit val argReader = new Reads[Arg] {
     def reads(json: JsValue) : JsResult[Arg] = {
@@ -37,7 +43,6 @@ object TupleSerialization {
       arg match {
         case terms: TermsArg => JsObject(Seq("termsArg" -> termsWriter.writes(terms)))
         case tuple: Tuple  => JsObject(Seq("tuple" -> tupleWriter.writes(tuple)))
-        case unknown: Any => sys.error("unknown Arg type: " + unknown)
       }
     }
   }
@@ -67,13 +72,15 @@ object TupleSerialization {
         sys.error("Failed to parse tuple: " + JsError.toFlatJson(errors))
     }
   }
+}
+
+object TupleSerializationExample {
 
   /**
    * Simple example for testing, demonstration.
    */
-  def example = {
-
-    val tuple = Tuple(
+  val exampleTuple = 
+                Tuple(
                   TermsArg(Seq(
                     Term("a"),
                     Term("good"),
@@ -96,7 +103,9 @@ object TupleSerialization {
                       Seq(TermsArg(Seq(Term("food"))),
                           TermsArg(Seq(Term("in"), Term("the"), Term("woods")))))))
 
-    val asJson = TupleSerialization.toJson(tuple, true)
+  def example = {
+
+    val asJson = TupleSerialization.toJson(exampleTuple, true)
     println("serialized Tuple as:\n" + asJson)
     val asTuple = TupleSerialization.fromJson(asJson)
     val asJsonFromTupleFromJson = TupleSerialization.toJson(asTuple, true)
