@@ -23,16 +23,19 @@ class PatternEvidenceFinder(solr:SolrSearchWrapper) extends EvidenceFinder {
 
   def find(proposition: Proposition): Option[Evidence] = {
     val text = proposition.text
-    println("Searching for: " + text)
+    logger.info("Searching for: " + text)
     val predicates = solr.searchSentence(text).map(x => Predicate(TupleHelper.from(x.arg1, x.relationText(), x.arg2), 1.0))
-    println("Found: " + predicates.size)
+    logger.info("# predicates found: " + predicates.size)
     predicates.isEmpty match {
       case false => {
-        val kbantecedent = Predicate(TupleHelper.from("KB", "KB", "KB"), 1.0)
-        val rules = predicates.map(x => new WeightedRule(Seq[Predicate](kbantecedent), x, 1.0))
-        Some(new Evidence(proposition, Seq[Axiom](), rules))
+        val axioms = predicates.map(pred => new Axiom(Seq[Predicate](), pred, 1.0))
+        println("Number of axioms# " + axioms.size)
+        Some(new Evidence(proposition, axioms, Seq[WeightedRule]()))
       }
-      case true => None
+      case true => {
+        logger.error("No matching predicates for proposition: " + proposition.toString())
+        None
+      }
     }
 
   }

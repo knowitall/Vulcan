@@ -14,11 +14,29 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 
 import edu.knowitall.vulcan._
 import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.inference.utils.TupleHelper
 
 trait ScoredItem {
   def score():Double
 }
 
+object Predicate{
+
+  val logger = LoggerFactory.getLogger(this.getClass)
+
+  val re = """T\((.*?),(.*?),(.*)\)""".r
+  def fromBinaryPredicateString(string:String): Option[Predicate] = {
+    try{
+      val re(arg1:String, rel:String, arg2:String) = string
+      Some(new Predicate(TupleHelper.from(arg1, rel, arg2), 1.0))
+    } catch{
+      case e:Exception => {
+        println("Failed to parse binary relation string: " + string)
+      }
+      None
+    }
+  }
+}
 case class Predicate(tuple:Tuple, confidence:Double) extends ScoredItem  {
 
   def score() = confidence

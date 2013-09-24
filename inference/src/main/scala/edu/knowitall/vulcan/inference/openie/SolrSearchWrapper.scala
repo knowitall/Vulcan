@@ -58,7 +58,7 @@ class SolrSearchWrapper(server:HttpSolrServer) {
     query.setQuery("*:*")
     def scrub(string:String) = string//RegexUtils.replaceSpecialCharsExcept(string, ":", " ")
     text.split(" ").map(_.trim).filter(_.size > 0).foreach(word => {
-      query.addFilterQuery("""text:"%s"""".format(scrub(word)))
+      query.addTermsField("""%s""".format(scrub(word)))
     })
     println("Solr query: " + query.toString)
     query
@@ -89,12 +89,12 @@ class SolrSearchWrapper(server:HttpSolrServer) {
     try {
       val arg1 = document.getFieldValue("arg1").toString
       val rel = document.getFieldValue("rel").toString
-      val arg2 = document.getFieldValue("arg2").toString
-      val size = document.getFieldValue("size").toString.toDouble
+      val arg2 = document.getFieldValue("arg2s").toString
       Some(new BinaryRelationTuple(arg1, rel, arg2))
     } catch {
       case e:Exception => {
         logger.error("Failed to convert document to fact: " + document.toString)
+        logger.error(e.getStackTrace.map(_.toString).mkString(" "))
         None
       }
     }

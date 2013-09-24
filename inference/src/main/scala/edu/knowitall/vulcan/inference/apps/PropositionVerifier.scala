@@ -11,18 +11,23 @@ package edu.knowitall.vulcan.inference.apps
 
 import edu.knowitall.vulcan.inference.evidence.{PatternEvidenceFinder, Evidence, EvidenceFinder}
 import edu.knowitall.vulcan.inference.proposition.Proposition
-import edu.knowitall.vulcan.inference.mln.{TuffyWrapper, MLNInstanceIO}
-import edu.knowitall.vulcan.inference.kb.{Predicate, BinaryRelationTuple}
+import edu.knowitall.vulcan.inference.kb.{LogicRules, WeightedRule, Predicate}
 import edu.knowitall.vulcan.inference.openie.SolrSearchWrapper
 import edu.knowitall.vulcan.inference.utils.TupleHelper
+import edu.knowitall.vulcan.inference.mln.tuffyimpl.{TuffyFormatter, MLNInstanceIO, TuffyWrapper}
+import java.io.File
 
-class PropositionVerifier(finder:EvidenceFinder, tuffy:TuffyWrapper, tempDirectory:String){
+class PropositionVerifier(finder:EvidenceFinder,
+                          tuffy:TuffyWrapper,
+                          rules:Seq[WeightedRule],
+                          tempDirectory:String){
 
   def verify(proposition:Proposition): String = {
     finder.find(proposition) match {
       case Some(evidence:Evidence) => {
-        val instance = MLNInstanceIO.fromEvidence(evidence)
-        MLNInstanceIO.TuffyFormatter.exportToDirectory(instance, tempDirectory)
+        val newEvidence = new Evidence(evidence.proposition, evidence.axioms, evidence.rules ++ rules)
+        val instance = MLNInstanceIO.fromEvidence(newEvidence)
+        TuffyFormatter.exportToDirectory(instance, tempDirectory)
         val output = tuffy.runTuffy(tempDirectory)
         println("Output: " + output)
         output
@@ -37,13 +42,13 @@ class PropositionVerifier(finder:EvidenceFinder, tuffy:TuffyWrapper, tempDirecto
 
 object PropositionVerifier {
 
+
+
   def main(args:Array[String]){
+
     val finder = new PatternEvidenceFinder(SolrSearchWrapper.getInstance(args(0)))
-     //JenaEvidenceFinder.fromFiles(factsFile=args(0), rulesFile=args(1))
-    //val propositions = PropositionIO.fromFile(new File(args(2)))
     val tuffy = TuffyWrapper.instance(args(1))
-    val verifier = new PropositionVerifier(finder, tuffy, args(2))
-    //propositions.foreach(verifier.verify(_))
+    val verifier = new PropositionVerifier(finder, tuffy, LogicRules.fromFile(new File(args(2))), args(3))
     val tupleRegex = """\((.*?), (.*?), (.*)\)""".r
     println("Enter Prop[(arg1, rel, arg2)]: ")
     import TupleHelper._
