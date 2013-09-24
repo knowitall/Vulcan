@@ -13,7 +13,11 @@ version := "0.1"
 
 scalaVersion := "2.10.2"
 
-resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
+resolvers ++= Seq(
+  "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
+  "Trusty Snapshots" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/snapshots",
+  "Trusty Releases" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/releases"
+)
 
 libraryDependencies ++= Seq(
   "play" %% "play" % "2.1.3",
