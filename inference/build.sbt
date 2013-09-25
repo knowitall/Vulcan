@@ -27,7 +27,7 @@ libraryDependencies ++= Seq(
     //
     //Vulcan common lib
     //
-    "edu.washington.cs.knowitall" %% "vulcan-common" % "0.1",
+    "edu.washington.cs.knowitall" %% "vulcan-common" % "0.2-SNAPSHOT",
     //
     //Netty, Jetty, unfiltered.
     //
