@@ -26,7 +26,7 @@ class TuffyWrapper(confFile:String){
     val efile = new File(tempDirectory + File.separator + "evidence.db")
     val qfile = new File(tempDirectory + File.separator + "query.db")
     val outfile = new File(tempDirectory + File.separator + "output.txt")
-    "-conf":: cfile.getAbsolutePath ::
+      "-conf":: cfile.getAbsolutePath ::
       "-marginal" ::
       "-i"::pfile.getAbsolutePath ::
       "-e"::efile.getAbsolutePath ::
@@ -37,6 +37,7 @@ class TuffyWrapper(confFile:String){
   }
   def runTuffyNative(tempDirectory:String): Option[InferenceResults] = {
     val args = toTuffyArgs(tempDirectory)
+    logger.info("Args: " + args.toArray.mkString(";"))
     runTuffyNative(args.toArray)
   }
   def runTuffyNative(args:Array[String]): Option[InferenceResults] = {
