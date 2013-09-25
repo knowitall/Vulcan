@@ -12,10 +12,42 @@ import edu.knowitall.vulcan.common.TermsArg
 object TupleSerialization {
 
   import play.api.libs.json._
+  import play.api.data.validation.ValidationError
 
-  // play's json library defines a bunch of macros for auto-serialization of simple types
-  implicit val termReader = Json.reads[Term]
-  implicit val termWriter = Json.writes[Term]
+  /**
+   * Define a more compact, fixed format for Term serialization which assumes either 
+   * all Option fields are present or none are for each term, and infers them from
+   * array positions.
+   */
+  implicit val termReader = new Reads[Term] {
+    def reads(json: JsValue) : JsResult[Term] = {
+
+      json match {
+
+        case JsArray(Seq(JsString(text))) => JsSuccess(Term(text))
+
+        case JsArray(Seq(JsString(text), 
+                         JsString(lemma), 
+                         JsString(postag),
+                         JsString(chunk))) => 
+          JsSuccess(Term(text, Some(lemma), Some(postag), Some(chunk)))
+
+        case other => JsError(ValidationError("Invalid Term json: " + Json.stringify(other)))
+      } 
+    }
+  }
+
+  implicit val termWriter = new Writes[Term] {
+    def writes(term: Term) : JsValue = {
+      if(term.hasDetails()) {
+        val d3 = term.details.get
+        val termJsStrings = Seq(term.text, d3._1, d3._2, d3._3).map(JsString)
+        JsArray(termJsStrings)
+      } else {
+        JsArray(Seq(JsString(term.text)))
+      }
+    }
+  }
 
   implicit val relationReader = Json.reads[Relation]
   implicit val relationWriter = Json.writes[Relation]
@@ -33,7 +65,7 @@ object TupleSerialization {
       json match {
         case JsObject(Seq(("termsArg", terms))) => termsReader.reads(terms)
         case JsObject(Seq(("tuple", tuple))) => tupleReader.reads(tuple)
-        case _ => sys.error("invalid Arg json: " + Json.stringify(json))
+        case other => JsError(ValidationError("Invalid Arg json: " + Json.stringify(other)))
       }
     }  
   }
