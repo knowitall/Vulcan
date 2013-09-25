@@ -19,7 +19,7 @@ object TuffyFormatter{
 
     def prune(text:String) = TuffyUtils.toTuffyLiteral(text)
 
-    def exportTuple(tuple:Tuple): String = "T(%s, %s, %s)".format(prune(tuple.arg1.lemma),prune(tuple.rel.lemma), prune(tuple.arg2s.map(_.lemma).mkString(" ")))
+    def exportTuple(tuple:Tuple): String = "T(%s, %s, %s)".format(prune(tuple.arg1.text),prune(tuple.rel.text), prune(tuple.arg2s.map(_.text).mkString(" ")))
 
     val out = exportTuple(p.tuple)
     score match {
