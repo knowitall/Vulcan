@@ -3,7 +3,10 @@ package app
 import java.util.Collection
 
 import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.common.Term
 import edu.knowitall.vulcan.common.Extraction
+
+import edu.knowitall.vulcan.common.serialization.TupleSerialization.termReader
 
 import edu.knowitall.vulcan.evidence.query.Query
 import edu.knowitall.vulcan.evidence.query.FieldQuery
@@ -29,6 +32,10 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import org.apache.solr.client.solrj.impl.HttpSolrServer
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.common.SolrDocument
+
+import play.api.libs.json.Json
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsError
 
 import java.lang.{Float => JFloat}
 import java.lang.{Double => JDouble}
@@ -85,7 +92,13 @@ class QueryExecutor(solrUrl: String) {
     val tuple = Tuple.makeTuple(arg1, rel, arg2s : _*)
 
     val sentence = doc.getFieldValue("sentence_text").asInstanceOf[String]
-    val sentenceDetails = doc.getFieldValue("sentence_details").asInstanceOf[String]
+    val sentenceDetailsJson = doc.getFieldValue("sentence_details").asInstanceOf[String]
+    val sentenceDetails : Seq[Term] = 
+      Json.fromJson[Seq[Term]](Json.parse(sentenceDetailsJson)) match {
+        case JsSuccess(terms, _) => terms
+        case JsError(error) => Seq(Term("error"))
+      }
+
     val confidence = doc.getFieldValue("confidence").asInstanceOf[JDouble]
     val id = doc.getFieldValue("id").asInstanceOf[String]
     val corpus = doc.getFieldValue("corpus").asInstanceOf[String]
