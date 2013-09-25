@@ -1,7 +1,5 @@
 package controllers
 
-import edu.knowitall.vulcan.query.QueryExecutor
-
 import edu.knowitall.vulcan.common.Tuple
 import edu.knowitall.vulcan.evidence.query.Query
 import edu.knowitall.vulcan.evidence.query.TupleQuery
@@ -18,6 +16,7 @@ object WebQueryHandler extends Controller {
   final val PAGE_SIZE = 20
 
   def query = Action { request =>
+    
     val (arg1, rel, arg2, keywords, corpus) = 
        (request.queryString("arg1").mkString(" "),
         request.queryString("rel").mkString(" "),
@@ -40,11 +39,9 @@ object WebQueryHandler extends Controller {
 
     val results : QueryResultPage = queries match {
       case Seq(EmptyQuery) => QueryResultPage.EMPTY
-      case _ => {
-        QueryHandler.executor.mergeExecute(queries,
-                                           page * PAGE_SIZE, 
-                                           PAGE_SIZE)
-      }
+      case _ => QueryHandler.executor.mergeExecute(queries,
+                                                   page * PAGE_SIZE, 
+                                                   PAGE_SIZE)
     }
 
     Ok(views.html.queryResults(results))

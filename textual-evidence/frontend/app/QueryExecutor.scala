@@ -41,6 +41,8 @@ import java.lang.{Float => JFloat}
 import java.lang.{Double => JDouble}
 import java.lang.{Iterable => JIterable}
 
+import play.Logger
+
 /**
  * For now just treat the whole SolrDocument as the result.
  * If we ever have a non-Solr backing store, break out this interface, 
