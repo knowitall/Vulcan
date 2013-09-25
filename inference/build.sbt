@@ -29,6 +29,10 @@ libraryDependencies ++= Seq(
     //
     "edu.washington.cs.knowitall" %% "vulcan-common" % "0.2-SNAPSHOT",
     //
+    //Textual Evidence Finder
+    //
+    "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.1",
+    //
     //Netty, Jetty, unfiltered.
     //
     "net.databinder" %% "unfiltered-netty" % "0.6.8",
