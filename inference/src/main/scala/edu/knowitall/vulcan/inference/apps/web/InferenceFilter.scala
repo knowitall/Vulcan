@@ -21,7 +21,7 @@ import scopt.mutable.OptionParser
 import scala.Some
 import unfiltered.response.ResponseString
 import edu.knowitall.vulcan.inference.proposition.Proposition
-import edu.knowitall.vulcan.inference.evidence.PatternEvidenceFinder
+import edu.knowitall.vulcan.inference.evidence.{TextualEvidenceFinder, PatternEvidenceFinder}
 import edu.knowitall.vulcan.inference.openie.SolrSearchWrapper
 import edu.knowitall.vulcan.inference.apps.PropositionVerifier
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyWrapper
@@ -89,7 +89,7 @@ object InferenceFilter {
   var verifier:PropositionVerifier = null
 
   def setup(solrURL:String, tuffyConfFile:String, rulesFile:String, tempDir:String) = {
-    val finder = new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
+    val finder = new TextualEvidenceFinder(solrURL)//new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
     val tuffy = new TuffyWrapper(tuffyConfFile)
     val file = new File(rulesFile)
     val rules = LogicRules.fromFile(file)
