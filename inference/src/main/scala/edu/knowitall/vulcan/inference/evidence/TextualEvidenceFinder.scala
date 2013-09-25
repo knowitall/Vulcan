@@ -23,13 +23,14 @@ class TextualEvidenceFinder(endpoint:String) extends EvidenceFinder{
 
   val client = new TextualEvidenceClient(endpoint)
 
-  val corpusQuery = TupleQuery.corpusQuery(Seq("glossary", "studyguide"))
+  val corpusQuery = TupleQuery.corpusQuery(Seq("glossary", "studyguide", "clueweb"))
+
+
 
   def find(proposition:Proposition) = {
     val query = QueryBuilder.and(TupleQuery.matchQuery(proposition.consequent.tuple), corpusQuery)
     logger.info("Query: " + query)
     val resultsPage = client.query(query)
-
     val predicates = resultsPage.results.map(result => Predicate(result.extraction.tuple, 1.0))
 
     predicates.isEmpty match {

@@ -22,6 +22,7 @@ object TuffyUtils {
 
   def toTuffyLiteral(string: String) = string.replaceAll("""[^a-zA-Z0-9 "]""", "")
 
+  def quotedConstant(string:String) = """"%s"""".format(string)
 
   val logger = LoggerFactory.getLogger(this.getClass)
 

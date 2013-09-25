@@ -15,12 +15,17 @@ import edu.knowitall.vulcan.inference.mln.MLNInstance
 
 object TuffyFormatter{
 
-  def exportPredicate(p:Predicate, score:Boolean = false): String = {
+  def exportPredicate(p:Predicate, score:Boolean = false, withQuotes:Boolean = false): String = {
 
     def prune(text:String) = TuffyUtils.toTuffyLiteral(text)
 
-    def exportTuple(tuple:Tuple): String = "T(%s, %s, %s)".format(prune(tuple.arg1.text),prune(tuple.rel.text), prune(tuple.arg2s.map(_.text).mkString(" ")))
-
+    def exportTuple(tuple:Tuple): String = {
+      val fmtString = withQuotes match {
+        case true => """T("%s", "%s", "%s")"""
+        case false => "T(%s, %s, %s)"
+      }
+      fmtString.format(prune(tuple.arg1.text),prune(tuple.rel.text), prune(tuple.arg2s.map(_.text).mkString(" ")))
+     }
     val out = exportTuple(p.tuple)
     score match {
       case false => out
@@ -32,17 +37,18 @@ object TuffyFormatter{
   val implication = "=>"
   val NL = "\n"
 
-  def exportAntecedents(seq:Seq[Predicate]) = seq.map(exportPredicate(_)).mkString(", ")
 
-  def exportRule(axiom:WeightedRule, withWeights:Boolean = false): String = {
+
+  def exportRule(axiom:WeightedRule, withWeights:Boolean = false, withQuotes:Boolean = false): String = {
     val sb = new StringBuilder
     if(withWeights){
       sb.append("%.2f ".format(axiom.score))
     }
+    def exportAntecedents(seq:Seq[Predicate]) = seq.map(exportPredicate(_, false, withQuotes)).mkString(", ")
     if(!axiom.antecedents.isEmpty){
       sb.append(exportAntecedents(axiom.antecedents)).append(" ").append(implication).append(" ")
     }
-    sb.append(exportPredicate(axiom.consequent))
+    sb.append(exportPredicate(axiom.consequent, false, withQuotes))
 
     /**axiom.antecedents.isEmpty match {
       case true => "%.2f %s".format(axiom.score(), export(axiom.consequent))
@@ -52,10 +58,10 @@ object TuffyFormatter{
     sb.toString()
   }
 
-  def exportPredicateDefinitions(seq:Seq[Predicate]) = seq.map(exportPredicate(_)).mkString("\n")
+  def exportPredicateDefinitions(seq:Seq[Predicate]) = seq.map(exportPredicate(_, false, false)).mkString("\n")
 
-  def exportRules(seq:Iterator[WeightedRule], useWeights:Boolean=true): String = {
-    seq.map(exportRule(_, useWeights)).mkString(NL)
+  def exportRules(seq:Iterator[WeightedRule], useWeights:Boolean=true, withQuotes:Boolean = false): String = {
+    seq.map(exportRule(_, useWeights, withQuotes)).mkString(NL)
   }
 
   def exportQueryFile(instance:MLNInstance, file:File) = {
@@ -66,7 +72,7 @@ object TuffyFormatter{
   }
 
   def exportEvidenceFile(instance:MLNInstance, file:File) = {
-    val output = exportRules(instance.evidence)
+    val output = exportRules(instance.evidence, false, true)
     val writer = new PrintWriter(file)
     writer.println(output)
     writer.close

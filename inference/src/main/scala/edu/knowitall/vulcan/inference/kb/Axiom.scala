@@ -36,7 +36,9 @@ object Predicate{
       None
     }
   }
+
 }
+
 case class Predicate(tuple:Tuple, confidence:Double) extends ScoredItem  {
 
   def score() = confidence
