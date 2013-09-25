@@ -22,7 +22,7 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   "play" %% "play" % "2.1.3",
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.0",
-  "edu.washington.cs.knowitall" %% "vulcan-common" % "0.2-SNAPSHOT",
+  "edu.washington.cs.knowitall" %% "vulcan-common" % "0.3-SNAPSHOT",
   "com.github.scopt" %% "scopt" % "2.1"
 ) 
 
