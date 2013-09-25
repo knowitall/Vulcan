@@ -71,12 +71,12 @@ class QueryExecutor(solrUrl: String) {
 
     // TODO this doesn't extract everything we have in the extraction 
     // document, like headwords, lemmas, detailed sentence parse info, etc
-    val arg1 = doc.getFieldValue("arg1_raw").asInstanceOf[String]
-    val rel = doc.getFieldValue("rel_raw").asInstanceOf[String]
+    val arg1 = doc.getFieldValue("arg1").asInstanceOf[String]
+    val rel = doc.getFieldValue("rel").asInstanceOf[String]
 
     // arg2s are optional, so check if they exist and if so collect them
-    val arg2s : Seq[String] = if(doc.getFieldValue("arg2s_raw") != null) { 
-      val arg2sSet = doc.getFieldValues("arg2s_raw").asInstanceOf[Collection[String]]
+    val arg2s : Seq[String] = if(doc.getFieldValue("arg2s") != null) { 
+      val arg2sSet = doc.getFieldValues("arg2s").asInstanceOf[Collection[String]]
       arg2sSet.toIndexedSeq
     } else {
       Nil 
