@@ -88,9 +88,9 @@ object InferenceFilter {
 
   var verifier:PropositionVerifier = null
 
-  def setup(solrURL:String, tuffyPath:String, rulesFile:String, tempDir:String) = {
+  def setup(solrURL:String, tuffyConfFile:String, rulesFile:String, tempDir:String) = {
     val finder = new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
-    val tuffy = new TuffyWrapper(tuffyPath)
+    val tuffy = new TuffyWrapper(tuffyConfFile)
     val file = new File(rulesFile)
     val rules = LogicRules.fromFile(file)
     logger.info("# of rules loaded = %d".format(rules.size) )
@@ -124,19 +124,19 @@ object InferenceFilter {
 
     var port = 8088
     var solrURL = ""
-    var tuffyPath = ""
+    var tuffyConfFile = ""
     var rulesFile = ""
     var tempDir = "./"
     val parser = new OptionParser() {
       arg("solrURL", "solr url for finding textual evidence.", {str => solrURL = str})
-      arg("tuffyPath", "Tuffy path.", {str => tuffyPath  = str})
+      arg("tuffyConfFile", "Tuffy conf file.", {str => tuffyConfFile  = str})
       arg("rulesFile", "Logic rules file.", {str => rulesFile  = str})
       arg("tempDir", "Temp directory for tuffy.", {str => tempDir = str})
       opt("p", "port", "Port to run on.", {str => port = str.toInt})
     }
 
     if(parser.parse(args)){
-      setup(solrURL, tuffyPath, rulesFile, tempDir)
+      setup(solrURL, tuffyConfFile, rulesFile, tempDir)
       unfiltered.netty.Http(port).plan(intentVal).run()
     }else{
       println(parser.usage)
