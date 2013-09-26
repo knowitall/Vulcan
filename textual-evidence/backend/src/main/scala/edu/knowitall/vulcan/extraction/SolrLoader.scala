@@ -8,73 +8,226 @@ package edu.knowitall.vulcan.extraction
  * backend populator uses.
  */
 
-import scala.collection.JavaConverters.asJavaIteratorConverter
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.concurrent.duration.Duration
+
 import scala.util.{Try, Success, Failure}
+import scala.collection.mutable.MutableList
+import scala.io.Source
+import scala.io.BufferedSource
 
-import edu.knowitall.common.Timing
-import edu.knowitall.vulcan.openie.Instance
+import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.common.TermsArg
+import edu.knowitall.vulcan.common.Relation
+import edu.knowitall.vulcan.common.Term
 
-import java.util.concurrent.atomic.AtomicInteger
+import edu.knowitall.vulcan.common.Extraction
+import edu.knowitall.vulcan.common.serialization.TupleSerialization
+import edu.knowitall.vulcan.common.serialization.TupleSerialization._
+import edu.knowitall.vulcan.common.serialization.ExtractionSerialization
+
+import java.io.File
+
+import play.api.libs.json.Json
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer
 import org.apache.solr.common.SolrInputDocument
 
 import org.slf4j.LoggerFactory
 
-class SolrLoader(urlString: String, corpus: Option[String]) {
+class SolrLoader(urlString: String, 
+                 source: BufferedSource,
+                 batchSize: Int,
+                 threads: Int)
+{
 
-  val logger = LoggerFactory.getLogger(classOf[SolrLoader])
+  val logger = LoggerFactory.getLogger(this.getClass)
 
-  val solr = new HttpSolrServer(urlString)
-  val id = new AtomicInteger(0)
+  val solr = new ConcurrentUpdateSolrServer(urlString, batchSize, threads)
+             //new HttpSolrServer(urlString)
 
-  def toSolrDocument(instance: Instance) = {
+  def toSolrDocument(extraction: Extraction) = {
+
+    val tuple = extraction.tuple
 
     val doc = new SolrInputDocument()
-    val extraction = instance.extraction
 
-    val ids = (if(corpus.nonEmpty) corpus.get + "_" else "") + id.getAndIncrement()
+    doc.setField("id", extraction.id)
+    doc.setField("corpus", extraction.corpus)
 
-    doc.setField("id", ids)
-    doc.setField("arg1", extraction.arg1)
-    doc.setField("rel", extraction.rel)
+    tuple.arg1 match {
+      case terms: TermsArg => {
+        doc.setField("arg1", terms.text)
+        if(!terms.headword.isEmpty) {
+          doc.setField("arg1_headwords", terms.headword.get.map{ _.text }.mkString(" "))
+        }
+        doc.setField("arg1_details", Json.stringify(Json.toJson(terms.terms)))
+      }
+      /* we don't handle nested tuples yet */
+      case other => sys.error("Unhandled arg1 type: " + other.getClass)
+    }
 
-    extraction.arg2s foreach(arg2 => doc.addField("arg2s", arg2))
+    doc.setField("rel", tuple.rel.text)
+    if(!tuple.rel.headword.isEmpty) {
+      doc.setField("rel_headwords", tuple.rel.headword.get.map{ _.text }.mkString(" "))
+    }
+    doc.setField("rel_details", Json.stringify(Json.toJson(tuple.rel.terms)))
 
-    extraction.context match {
-      case Some(c) => doc.setField("context", c)
+    tuple.arg2s foreach(arg2 => {
+      arg2 match {
+        case terms: TermsArg => {
+          doc.addField("arg2s", terms.text)
+          if(!terms.headword.isEmpty) {
+            doc.setField("arg2_headwords", terms.headword.get.map{ _.text }.mkString(" "))
+          }
+          doc.addField("arg2s_details", Json.stringify(Json.toJson((terms.terms))))
+        }
+        /* we don't handle nested tuples yet */
+        case other => sys.error("Unhandled arg1 type: " + other.getClass)
+      }})
+
+    tuple.context match {
+      case Some(c) => doc.setField("context", c.map{ _.text }.mkString(" "))
       case None => ;
     }
-    doc.setField("confidence", instance.confidence)
 
-    doc.setField("sentence_text", instance.sentence)
+    doc.setField("confidence", extraction.confidence)
 
-    if(corpus nonEmpty) {
-      doc.setField("corpus", corpus.get)
-    }
+    doc.setField("sentence_text", extraction.sentence)
+    val sentenceDetailsJson = Json.stringify(Json.toJson(extraction.sentenceDetails))
+    doc.setField("sentence_details", sentenceDetailsJson )
 
-    doc.setField("passive", extraction.passive)
-    doc.setField("negation", extraction.negated)
-    doc.setField("postags", instance.postagsString)
+    doc.setField("passive", tuple.rel.passive)
+    doc.setField("negation", tuple.rel.negated)
 
     doc
   }
 
-  def load(instance: Instance) : Try[Int] = {
-    load(Seq(instance).iterator)
-  }
-
-  def load(instances: Iterator[Instance]) : Try[Int] = {
+  def load(extractions: Iterable[Extraction]) : Try[Int] = {
     var n = 0
     Try({ 
-      instances.foreach(instance => {
-        solr.add(toSolrDocument(instance))
-        n += instance.extraction.arg2s.length
+      extractions.foreach(extraction => {
+        solr.add(toSolrDocument(extraction))
+        n += 1
       })
       solr.commit()
       n
     })
   }
 
-  def shutdown = solr.shutdown()
+  def run() = {
+
+    val extractions : Iterator[String] = source.getLines()
+
+    /**
+     * starts a future which sits in a loop loading Extraction Tuples in batches of batchSize
+     * for as long as there are any
+     */
+    def loaderLoop() = {
+      future {
+        var loaded: Int = 0
+        val batch = new MutableList[Extraction]()
+        
+        while(extractions.hasNext) {
+          extractions.synchronized {
+            while(extractions.hasNext && batch.size < batchSize) {
+              val extractionJson = extractions.next()
+              val extraction = ExtractionSerialization.fromJson(extractionJson)
+              batch += extraction 
+            }
+          }
+
+          if(batch.size > 0) {
+            load(batch) match {
+              case Success(n: Int) => {
+                loaded += n
+                logger.info("loaded " + batch.size + " extractions")
+              }
+              case Failure(x) => logger.error("failed to load extract batch: " + x.getMessage, x)
+            }
+            batch.clear()
+          }
+        }
+        loaded
+      }
+    }
+              
+    val loaders = for(i <- 0 until threads) yield loaderLoop()
+
+    var total: Int = 0
+    for(loader <- loaders) {
+      val loaded = Await.result(loader, Duration.Inf) 
+      total += loaded
+      logger.info("loader loaded " + loaded + " extractions")
+    }
+
+    logger.info("All loaders loaded " + total + " total extractions")
+
+    solr.blockUntilFinished()
+    solr.shutdown()
+  }
+}
+
+object SolrLoaderMain {
+
+  val logger = LoggerFactory.getLogger("SolrLoaderMain")
+
+  case class Config(val solrUrl: String = "",
+                    val source: BufferedSource = Source.stdin,
+                    val batchSize: Int = 1000,
+                    val threads: Int = 1)
+
+  def parseArgs(args: Array[String]) : Option[Config] = {
+
+    val parser = new scopt.immutable.OptionParser[Config]("SolrLoaderMain") {
+
+      def options = Seq(
+        opt("solr-url", "required: solr instance to load extractions into") { 
+          (param, c) => c.copy(solrUrl = param)
+        }, 
+
+        opt("input-file", "where to read input sentences, default stdin") { 
+          (param, c) => c.copy(source = Source.fromFile(new File(param))) 
+        }, 
+
+        intOpt("threads", "number of threads to upload with, default 1") {
+          (param, c) => c.copy(threads = param)
+        }, 
+
+        intOpt("batch-size", "number docs to batch-write to solr at a time, default 1000") {
+          (param, c) => c.copy(threads = param)
+        } 
+      )
+    }
+
+    parser.parse(args, Config()) match {
+      case Some(c) => {
+        if(c.solrUrl == "") {
+          parser.showUsage
+          None
+        } else {
+          Some(c)
+        }
+      }
+      case None => None
+    }
+  }
+
+  def main(args:Array[String]) {
+
+    val config: Config = parseArgs(args) match {
+      case Some(c) => c
+      case None => return
+    }
+
+    val solrLoader = new SolrLoader(config.solrUrl, 
+                                    config.source,
+                                    config.batchSize,
+                                    config.threads)
+
+    solrLoader.run()
+  }
 }

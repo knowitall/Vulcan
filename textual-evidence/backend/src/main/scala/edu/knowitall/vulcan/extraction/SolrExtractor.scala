@@ -140,8 +140,7 @@ object SolrExtractor {
     val config = parser.parse(args, Config())
     config match {
       case Some(c) =>
-        // scopt's missing support for required named options, so check sourceSolrUrl explicitly
-        if(c.sourceSolrUrl.equals("")) {
+        if(c.sourceSolrUrl == "") {
           parser.showUsage
           None
         } else if(c.outputDir.nonEmpty && !(new File(c.outputDir.get).isDirectory)) {
