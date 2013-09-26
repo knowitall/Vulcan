@@ -88,8 +88,8 @@ object InferenceFilter {
 
   var verifier:PropositionVerifier = null
 
-  def setup(solrURL:String, tuffyConfFile:String, rulesFile:String, tempDir:String) = {
-    val finder = new TextualEvidenceFinder(solrURL)//new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
+  def setup(endpoint:String, tuffyConfFile:String, rulesFile:String, tempDir:String) = {
+    val finder = new TextualEvidenceFinder(endpoint)//new PatternEvidenceFinder(SolrSearchWrapper.getInstance(solrURL))
     val tuffy = new TuffyWrapper(tuffyConfFile)
     val file = new File(rulesFile)
     val rules = LogicRules.fromFile(file)
@@ -123,12 +123,12 @@ object InferenceFilter {
   def main(args:Array[String]){
 
     var port = 8088
-    var solrURL = ""
+    var endpoint = ""
     var tuffyConfFile = ""
     var rulesFile = ""
     var tempDir = "./"
     val parser = new OptionParser() {
-      arg("solrURL", "solr url for finding textual evidence.", {str => solrURL = str})
+      arg("endpoint", "TE client endpoint url. (e.g. http://rv-n16.cs.washington.edu:9191/api/query)", {str => endpoint = str})
       arg("tuffyConfFile", "Tuffy conf file.", {str => tuffyConfFile  = str})
       arg("rulesFile", "Logic rules file.", {str => rulesFile  = str})
       arg("tempDir", "Temp directory for tuffy.", {str => tempDir = str})
@@ -136,7 +136,7 @@ object InferenceFilter {
     }
 
     if(parser.parse(args)){
-      setup(solrURL, tuffyConfFile, rulesFile, tempDir)
+      setup(endpoint, tuffyConfFile, rulesFile, tempDir)
       unfiltered.netty.Http(port).plan(intentVal).run()
     }else{
       println(parser.usage)
