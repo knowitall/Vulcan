@@ -1,6 +1,10 @@
 package edu.knowitall.vulcan.extraction
 
 import edu.knowitall.srlie.SrlExtraction
+import edu.knowitall.srlie.SrlExtraction.{Relation => SrlRelation}
+import edu.knowitall.srlie.SrlExtraction.{Argument => SrlArgument}
+import edu.knowitall.srlie.nested.SrlNestedExtraction
+import edu.knowitall.srlie.nested.SrlNestedExtraction.SrlNestedArgument
 import edu.knowitall.tool.tokenize.ClearTokenizer
 import edu.knowitall.tool.chunk.OpenNlpChunker
 import edu.knowitall.tool.postag.OpenNlpPostagger
@@ -27,6 +31,7 @@ import edu.knowitall.vulcan.headwords.HeadExtractor
 import edu.knowitall.tool.postag.PostaggedToken
 
 import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.common.Arg
 import edu.knowitall.vulcan.common.Extraction
 import edu.knowitall.vulcan.common.Term
 import edu.knowitall.vulcan.common.Relation
@@ -78,6 +83,9 @@ class Extractor(corpus: String, batchId: String) {
   val relnoun = new Relnoun
   val srlie = new SrlExtractor(srl)
 
+  var rootN: Int = 0
+  var nestedN: Int = 0
+
   def toTerm(token: Lemmatized[ChunkedToken]) : Term = {
     Term(token.string, Some(token.lemma), Some(token.postag), Some(token.chunk))
   }
@@ -109,11 +117,22 @@ class Extractor(corpus: String, batchId: String) {
     val sentenceDetails = chunked.map(toTerm)
     val parsed = parser(sentence)
 
-    // run extractors
-    val srlExtrs: Seq[SrlExtractionInstance] = srlie(parsed)
-    //val srlNested: Seq[SrlNestedExtraction] = SrlNestedExtraction.from(srlExtrs)
-
     val relnounExtrs = relnoun(chunked)
+
+    def offsets(part: SrlExtraction.MultiPart) = {
+      var intervals = part.intervals
+      var tokens = part.tokens.sorted
+      var offsets = List.empty[Interval]
+      while (!intervals.isEmpty) {
+        val sectionTokens = tokens.take(intervals.head.size)
+        tokens = tokens.drop(intervals.head.size)
+        intervals = intervals.drop(1)
+
+        offsets ::= Interval.open(sectionTokens.head.offsets.start, sectionTokens.last.offsets.end)
+      }
+
+      offsets.reverse
+    }
 
     def tokensForPart(part: Part) = {
       part.offsets map { interval =>
@@ -140,29 +159,26 @@ class Extractor(corpus: String, batchId: String) {
       val argTerms = argToks.map(toTerm)
       TermsArg(argTerms, argHead)
     }
+    
+    def argForSrlArgument(arg: SrlArgument, withHead: Boolean = true) : TermsArg = {
+      val argPart = new Part(arg.text, 
+                             Seq(Interval.open(arg.tokens.head.offsets.start,
+                                               arg.tokens.last.offsets.end)))
+      argForPart(argPart) 
+    }
+
+    def relForSrlRelation(rel: SrlRelation, negated: Boolean, passive: Boolean) : Relation = {
+      val relPart = new Part(rel.text, offsets(rel))
+      relationForPart(relPart, negated, passive)
+    }
       
     def convertSrl(inst: SrlExtractionInstance): Extraction = {
 
-      def offsets(part: SrlExtraction.MultiPart) = {
-        var intervals = part.intervals
-        var tokens = part.tokens.sorted
-        var offsets = List.empty[Interval]
-        while (!intervals.isEmpty) {
-          val sectionTokens = tokens.take(intervals.head.size)
-          tokens = tokens.drop(intervals.head.size)
-          intervals = intervals.drop(1)
-
-          offsets ::= Interval.open(sectionTokens.head.offsets.start, sectionTokens.last.offsets.end)
-        }
-
-        offsets.reverse
-      }
 
       //
       // Build a Relation from the extraction
       //
-      val relPart = new Part(inst.extr.rel.text, offsets(inst.extr.rel))
-      val rel = relationForPart(relPart, inst.extr.negated, inst.extr.passive)
+      val rel = relForSrlRelation(inst.extr.rel, inst.extr.negated, inst.extr.passive)
 
       //
       // Build arg1 from the extraction
@@ -205,13 +221,30 @@ class Extractor(corpus: String, batchId: String) {
       val confidence = srlieConf(inst)
 
       Extraction(Tuple(arg1, rel, arg2s, context),
-                  sentence, 
-                  sentenceDetails,
-                  confidence,
-                  nextId(),
-                  corpus) 
+                 sentence, 
+                 sentenceDetails,
+                 confidence,
+                 nextId(),
+                 corpus) 
     }
 
+    def convertSrlNestedArg(arg: SrlNestedArgument) : Arg = {
+      arg match {
+        case Left(arg1: SrlArgument) => argForSrlArgument(arg1)
+        case Right(nested: SrlNestedExtraction) => convertSrlNested(nested)
+      }
+    }
+
+    def convertSrlNested(extr: SrlNestedExtraction) : Tuple = {
+
+      val relPart = new Part(extr.rel.text, offsets(extr.rel))
+      val rel = relationForPart(relPart, false, false) // TODO get negation, passive flags
+
+      Tuple(convertSrlNestedArg(extr.arg1),
+            relForSrlRelation(extr.rel, false, false), // TODO get negation, passive
+            extr.arg2s.map(convertSrlNestedArg))
+    }
+    
     def convertRelnoun(inst: BinaryExtractionInstance[ChunkedToken]): Extraction = {
 
       val relPart = new Part(inst.extr.rel.text, Seq(inst.extr.rel.offsetInterval))
@@ -231,7 +264,29 @@ class Extractor(corpus: String, batchId: String) {
                  corpus) 
     }
 
-    val extrs = (srlExtrs map convertSrl) ++ (relnounExtrs map convertRelnoun)  
+    val srlExtrs: Seq[SrlExtractionInstance] = srlie(parsed)
+    rootN += srlExtrs.size
+
+    val confidence = srlExtrs match {
+      case Nil => None
+      case inst :: _ => Some(srlieConf(inst)) // assumes all confidences are the same
+    }
+    val srlNested: Seq[SrlNestedExtraction] = SrlNestedExtraction.from(srlExtrs.map { _.extr })
+    nestedN += srlNested.size
+
+    val srls = srlNested.map(srl => 
+                 Extraction(convertSrlNested(srl),
+                            sentence, 
+                            sentenceDetails,
+                            confidence.get,
+                            nextId(),
+                            corpus))
+                            
+
+
+    val extrs = srls ++ (relnounExtrs map convertRelnoun)  
+
+    logger.info(s"extracted $rootN base and $nestedN total extractoins so far")
 
     extrs
   }
