@@ -1,5 +1,6 @@
 package edu.knowitall.vulcan.common.serialization
 
+import edu.knowitall.vulcan.common.Term
 import edu.knowitall.vulcan.common.Extraction
 
 /**
@@ -9,8 +10,11 @@ object ExtractionSerialization {
 
   import play.api.libs.json._
 
-  implicit val tupleReader = TupleSerialization.tupleReader
-  implicit val tupleWriter = TupleSerialization.tupleWriter
+  import TupleSerialization.termReader
+  import TupleSerialization.termWriter 
+
+  import TupleSerialization.tupleReader
+  import TupleSerialization.tupleWriter
 
   implicit val extractionReader : Reads[Extraction] = Json.reads[Extraction]
   implicit val extractionWriter : Writes[Extraction] = Json.writes[Extraction]
@@ -35,7 +39,7 @@ object ExtractionSerializationExample {
 
   val exampleExtraction = Extraction(TupleSerializationExample.exampleTuple,
                                      "the quick brown fox jumps over the lazy dog",
-                                     "setence details go here",
+                                     Seq(Term("sentence"), Term("details")),
                                      .75,
                                      "testId",
                                      "testCorpus")

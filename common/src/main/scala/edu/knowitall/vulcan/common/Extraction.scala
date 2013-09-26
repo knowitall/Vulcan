@@ -12,7 +12,7 @@ package edu.knowitall.vulcan.common
  */
 case class Extraction(tuple: Tuple,
                       sentence: String,
-                      sentenceDetails: String,
+                      sentenceDetails: Seq[Term],
                       confidence: Double,
                       id: String,
                       corpus: String)

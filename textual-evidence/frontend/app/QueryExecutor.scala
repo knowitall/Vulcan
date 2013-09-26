@@ -3,7 +3,10 @@ package app
 import java.util.Collection
 
 import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.common.Term
 import edu.knowitall.vulcan.common.Extraction
+
+import edu.knowitall.vulcan.common.serialization.TupleSerialization.termReader
 
 import edu.knowitall.vulcan.evidence.query.Query
 import edu.knowitall.vulcan.evidence.query.FieldQuery
@@ -30,9 +33,15 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.common.SolrDocument
 
+import play.api.libs.json.Json
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsError
+
 import java.lang.{Float => JFloat}
 import java.lang.{Double => JDouble}
 import java.lang.{Iterable => JIterable}
+
+import play.Logger
 
 /**
  * For now just treat the whole SolrDocument as the result.
@@ -71,12 +80,12 @@ class QueryExecutor(solrUrl: String) {
 
     // TODO this doesn't extract everything we have in the extraction 
     // document, like headwords, lemmas, detailed sentence parse info, etc
-    val arg1 = doc.getFieldValue("arg1_raw").asInstanceOf[String]
-    val rel = doc.getFieldValue("rel_raw").asInstanceOf[String]
+    val arg1 = doc.getFieldValue("arg1").asInstanceOf[String]
+    val rel = doc.getFieldValue("rel").asInstanceOf[String]
 
     // arg2s are optional, so check if they exist and if so collect them
-    val arg2s : Seq[String] = if(doc.getFieldValue("arg2s_raw") != null) { 
-      val arg2sSet = doc.getFieldValues("arg2s_raw").asInstanceOf[Collection[String]]
+    val arg2s : Seq[String] = if(doc.getFieldValue("arg2s") != null) { 
+      val arg2sSet = doc.getFieldValues("arg2s").asInstanceOf[Collection[String]]
       arg2sSet.toIndexedSeq
     } else {
       Nil 
@@ -85,7 +94,13 @@ class QueryExecutor(solrUrl: String) {
     val tuple = Tuple.makeTuple(arg1, rel, arg2s : _*)
 
     val sentence = doc.getFieldValue("sentence_text").asInstanceOf[String]
-    val sentenceDetails = doc.getFieldValue("sentence_details").asInstanceOf[String]
+    val sentenceDetailsJson = doc.getFieldValue("sentence_details").asInstanceOf[String]
+    val sentenceDetails : Seq[Term] = 
+      Json.fromJson[Seq[Term]](Json.parse(sentenceDetailsJson)) match {
+        case JsSuccess(terms, _) => terms
+        case JsError(error) => Seq(Term("error"))
+      }
+
     val confidence = doc.getFieldValue("confidence").asInstanceOf[JDouble]
     val id = doc.getFieldValue("id").asInstanceOf[String]
     val corpus = doc.getFieldValue("corpus").asInstanceOf[String]

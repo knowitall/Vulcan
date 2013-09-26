@@ -1,6 +1,6 @@
 package controllers
 
-import edu.knowitall.vulcan.query.QueryExecutor
+import app.QueryExecutor
 import edu.knowitall.vulcan.evidence.query.QueryRequest
 
 import play.Logger

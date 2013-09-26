@@ -44,6 +44,19 @@ case class Term(text: String,
                 lemma: Option[String] = None, 
                 postag: Option[String] = None, 
                 chunk: Option[String] = None)
+{
+  def hasDetails() : Boolean = {
+    !(lemma.isEmpty || postag.isEmpty || chunk.isEmpty) 
+  }
+
+  lazy val details : Option[(String,String,String)] = {
+    if(hasDetails()) {
+      Some((lemma.get, postag.get, chunk.get))
+    } else {
+      None
+    }
+  }
+}
 
 /**
  * Relation is a Seq of Terms with Option head Terms, and negation and passive indicators
