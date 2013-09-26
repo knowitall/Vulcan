@@ -6,6 +6,11 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.10.2"
 
+resolvers ++= Seq(
+  		"Trusty Snapshots" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/snapshots",
+  		"Trusty Releases" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/releases"
+		)
+
 resolvers += "Sonatype SNAPSHOTS" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 resolvers ++= Seq("scala-tools.org" at "http://scala-tools.org/repo-releases",
@@ -31,7 +36,7 @@ libraryDependencies ++= Seq(
     //
     //Textual Evidence Finder
     //
-    "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.1",
+    "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.2",
     //
     //Netty, Jetty, unfiltered.
     //
