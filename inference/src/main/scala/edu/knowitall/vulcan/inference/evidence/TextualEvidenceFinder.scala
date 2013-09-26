@@ -17,6 +17,18 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.kb.{WeightedRule, Axiom, Predicate}
 import org.slf4j.LoggerFactory
 
+object TextualEvidenceFinder{
+
+  def main(args:Array[String]){
+    if(args.size > 0){
+      val finder = new TextualEvidenceFinder(args(0))
+      finder.find(new Proposition(Seq[Predicate](), Predicate(Tuple.makeTuple("metal", "conductor", "electricity"), 1.0)))
+    }else{
+      println("Usage: " + TextualEvidenceFinder.getClass.getCanonicalName + " <te client url>")
+    }
+  }
+}
+
 class TextualEvidenceFinder(endpoint:String) extends EvidenceFinder{
 
   val logger = LoggerFactory.getLogger(this.getClass)
