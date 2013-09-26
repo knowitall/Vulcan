@@ -55,7 +55,7 @@ object TupleQuery {
   /**
    * A Query that returns Tuples from the given corpora.
    */
-  def corpusQuery(corpora: Seq[String]) = {
+  def corpusQuery(corpora: Seq[String]): Query = {
     any("corpus", corpora)
   }
 

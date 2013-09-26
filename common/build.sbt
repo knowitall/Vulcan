@@ -9,7 +9,7 @@ name := "vulcan-common"
 
 organization := "edu.washington.cs.knowitall"
 
-version := "0.2-SNAPSHOT"
+version := "0.3-SNAPSHOT"
 
 scalaVersion := "2.10.2"
 
