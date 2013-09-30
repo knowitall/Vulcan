@@ -20,7 +20,10 @@ import scala.collection.mutable.ArrayBuffer
 
 object TuffyUtils {
 
-  def toTuffyLiteral(string: String) = string.replaceAll("""[^a-zA-Z0-9 "]""", "")
+  def toTuffyLiteral(string: String, withQuotes:Boolean = false) = withQuotes match {
+    case true => string.replaceAll("""[^a-zA-Z0-9 ]""", "")
+    case false => string.replaceAll("""[^a-zA-Z0-9 "]""", "")
+  }
 
   def quotedConstant(string:String) = """"%s"""".format(string)
 

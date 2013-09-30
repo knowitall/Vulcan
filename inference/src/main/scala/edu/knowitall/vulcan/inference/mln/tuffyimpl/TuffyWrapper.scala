@@ -32,12 +32,14 @@ class TuffyWrapper(confFile:String){
       "-e"::efile.getAbsolutePath ::
       "-queryFile"::qfile.getAbsolutePath ::
       "-r"::outfile.getAbsolutePath ::
-      "-printResultsAsPrologFacts":: "-mcsatSamples"::"1000":: "-numInfIters":: "1"::
+      "-printResultsAsPrologFacts"::
+      "-mcsatSamples"::"1000"::
+      "-numInfIters":: "2"::
       Nil
   }
   def runTuffyNative(tempDirectory:String): Option[InferenceResults] = {
     val args = toTuffyArgs(tempDirectory)
-    logger.info("Args: " + args.toArray.mkString(";"))
+    logger.info("Args: " + args.toArray.mkString(" "))
     runTuffyNative(args.toArray)
   }
   def runTuffyNative(args:Array[String]): Option[InferenceResults] = {

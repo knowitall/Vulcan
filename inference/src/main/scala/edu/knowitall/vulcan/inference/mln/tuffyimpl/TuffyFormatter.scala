@@ -9,22 +9,31 @@ package edu.knowitall.vulcan.inference.mln.tuffyimpl
  */
 
 import edu.knowitall.vulcan.inference.kb.{WeightedRule, Predicate}
-import edu.knowitall.vulcan.common.Tuple
+import edu.knowitall.vulcan.common.{Term, TermsArg, Arg, Tuple}
 import java.io.{PrintWriter, File}
 import edu.knowitall.vulcan.inference.mln.MLNInstance
+import edu.knowitall.vulcan.inference.utils.TupleHelper
 
 object TuffyFormatter{
 
   def exportPredicate(p:Predicate, score:Boolean = false, withQuotes:Boolean = false): String = {
 
-    def prune(text:String) = TuffyUtils.toTuffyLiteral(text)
+    def prune(text:String) = TuffyUtils.toTuffyLiteral(text, withQuotes)
+
 
     def exportTuple(tuple:Tuple): String = {
       val fmtString = withQuotes match {
         case true => """T("%s", "%s", "%s")"""
         case false => "T(%s, %s, %s)"
       }
-      fmtString.format(prune(tuple.arg1.text),prune(tuple.rel.text), prune(tuple.arg2s.map(_.text).mkString(" ")))
+      import TupleHelper._
+      fmtString.format(prune(tuple.arg1.text),
+        prune(tuple.rel.text),
+        prune(tuple.arg2s.map(_.text).mkString(" ")))
+
+      /**fmtString.format(prune(lemma(tuple.arg1)),
+                       prune(lemma(tuple.rel.terms)),
+                       prune(tuple.arg2s.map(lemma(_)).mkString(" "))) */
      }
     val out = exportTuple(p.tuple)
     score match {
@@ -99,7 +108,7 @@ object TuffyFormatter{
     "//Axioms\n" + exportRules(instance.evidence) + "\n" +
       "//Predicate definitions\n"  + exportPredicateDefinitions(instance.predicateDefinitions) + "\n" +
       "//Program\n" + exportRules(instance.rules.iterator) + "\n" +
-      "//Evidence\n" + exportRules(instance.query.iterator)
+      "//Query\n" + exportRules(instance.query.iterator)
 
   }
 }
