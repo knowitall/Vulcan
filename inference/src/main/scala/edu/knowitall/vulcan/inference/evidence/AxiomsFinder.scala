@@ -8,7 +8,8 @@ package edu.knowitall.vulcan.inference.evidence
  * To change this template use File | Settings | File Templates.
  */
 import edu.knowitall.vulcan.inference.proposition.Proposition
+import edu.knowitall.vulcan.inference.kb.Axiom
 
-abstract class EvidenceFinder {
-  def find(proposition:Proposition): Option[Evidence]
+abstract class AxiomsFinder {
+  def find(proposition:Proposition): Seq[Axiom]
 }

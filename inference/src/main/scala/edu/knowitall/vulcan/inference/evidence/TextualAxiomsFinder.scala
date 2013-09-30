@@ -17,19 +17,19 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.kb.{WeightedRule, Axiom, Predicate}
 import org.slf4j.LoggerFactory
 
-object TextualEvidenceFinder{
+object TextualAxiomsFinder{
 
   def main(args:Array[String]){
     if(args.size > 0){
-      val finder = new TextualEvidenceFinder(args(0))
+      val finder = new TextualAxiomsFinder(args(0))
       finder.find(new Proposition(Seq[Predicate](), Predicate(Tuple.makeTuple("metal", "conductor", "electricity"), 1.0)))
     }else{
-      println("Usage: " + TextualEvidenceFinder.getClass.getCanonicalName + " <te client url>")
+      println("Usage: " + TextualAxiomsFinder.getClass.getCanonicalName + " <te client url>")
     }
   }
 }
 
-class TextualEvidenceFinder(endpoint:String) extends EvidenceFinder{
+class TextualAxiomsFinder(endpoint:String) extends AxiomsFinder{
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -38,24 +38,14 @@ class TextualEvidenceFinder(endpoint:String) extends EvidenceFinder{
   val corpusQuery = TupleQuery.corpusQuery(Seq("glossary", "studyguide", "clueweb"))
 
 
-
   def find(proposition:Proposition) = {
-    val query = QueryBuilder.and(TupleQuery.matchQuery(proposition.consequent.tuple), corpusQuery)
+    val query = QueryBuilder.and(TupleQuery.matchAnyQuery(proposition.consequent.tuple), corpusQuery)
     logger.info("Query: " + query)
-    val resultsPage = client.query(query)
+    val resultsPage = client.query(query, start=0, rows=100)
     val predicates = resultsPage.results.map(result => Predicate(result.extraction.tuple, 1.0))
 
-    predicates.isEmpty match {
-      case false => {
-        val axioms = predicates.map(pred => new Axiom(Seq[Predicate](), pred, 1.0))
-        println("Number of axioms# " + axioms.size)
-        Some(new Evidence(proposition, axioms, Seq[WeightedRule]()))
-      }
-      case true => {
-        logger.error("No matching predicates for proposition: " + proposition.toString())
-        None
-      }
-    }
+    Axiom.fromTuple(Tuple.makeTuple("metal", "conductor of", "electricity"))::Nil ++
+      predicates.map(new Axiom(Seq[Predicate](), _, 1.0))
 
   }
 

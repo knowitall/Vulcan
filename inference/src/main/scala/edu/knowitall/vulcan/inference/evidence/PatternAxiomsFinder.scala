@@ -17,7 +17,7 @@ import edu.knowitall.vulcan.inference.kb.{Axiom, WeightedRule, BinaryRelationTup
 import scala.collection.mutable
 import edu.knowitall.vulcan.inference.utils.TupleHelper
 
-class PatternEvidenceFinder(solr:SolrSearchWrapper) extends EvidenceFinder {
+/**class PatternAxiomsFinder(solr:SolrSearchWrapper) extends AxiomsFinder {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -43,4 +43,4 @@ class PatternEvidenceFinder(solr:SolrSearchWrapper) extends EvidenceFinder {
 
   }
 
-}
+}    */
