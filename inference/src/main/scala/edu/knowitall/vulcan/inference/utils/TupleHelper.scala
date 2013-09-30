@@ -17,6 +17,22 @@ import edu.knowitall.vulcan.common.Tuple
 
 object TupleHelper {
 
+  def lemma(terms:Seq[Term]):String = terms.map(_.lemma).mkString(" ")
+
+
+  def lemma(arg:Arg):String = arg match {
+    case arg:TermsArg => lemma(arg.terms)
+    case _ => throw new Exception("Nested tuples not supported.")
+  }
+
+  def text(terms:Seq[Term]):String = terms.map(_.text).mkString(" ")
+
+  def text(arg:Arg):String = arg match {
+    case arg:TermsArg => text(arg.terms)
+    case _ => throw new Exception("Nested tuples not supported.")
+  }
+
+
   def toArgText(arg:Arg): String = arg.text
   def toRelText(rel:Relation): String = rel.terms.map(_.text).mkString(" ")
   def tupleText(tuple:Tuple) = "%s %s %s".format(toArgText(tuple.arg1),
