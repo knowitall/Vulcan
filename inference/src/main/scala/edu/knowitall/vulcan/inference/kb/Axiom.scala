@@ -48,6 +48,8 @@ case class Predicate(tuple:Tuple, confidence:Double) extends ScoredItem  {
 
 object Axiom{
 
+  def fromTuple(tuple:Tuple, confidence:Double = 1.0) = new Axiom(Seq[Predicate](), Predicate(tuple, 1.0), confidence)
+
   def fromProposition(prop:Proposition) = new Axiom(prop.antecedents, prop.consequent, confidence = 1.0)
 
   def fromRule(rule:Rule, confidence:Double = 1.0) = new Axiom(rule.antecedents, rule.consequent, confidence)
