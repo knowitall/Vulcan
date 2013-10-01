@@ -110,7 +110,12 @@ object InferenceFilter {
         val query = getQuery(req)
         val tupleRegex(arg1, rel, arg2) = query
         val pred = new Predicate(from(arg1, rel, arg2), 1.0)
-        val result = verifier.verify(new Proposition(Seq[Predicate](), pred))
+        logger.info("Proposition predicate: " + pred.tuple.toString)
+        val proposition = new Proposition(Seq[Predicate](), pred)
+
+        val evidence = verifier.findEvidence(proposition)
+        verifier.exportEvidence(evidence)
+        val result = verifier.runTuffy()
         ResponseString(wrapHTML(response(query, result)))
       }else{
         ResponseString(wrapHTML(form("").toString()))
@@ -128,6 +133,7 @@ object InferenceFilter {
     var tempDir = "./"
     var host = ""
     var cncport = 0
+    var lemma = false
     val parser = new OptionParser() {
       arg("endpoint", "TE client endpoint url. (e.g. http://rv-n16.cs.washington.edu:9191/api/query)", {str => endpoint = str})
       arg("tuffyConfFile", "Tuffy conf file.", {str => tuffyConfFile  = str})
@@ -136,6 +142,7 @@ object InferenceFilter {
       arg("host", "CNC Host.", {str => host = str})
       arg("cncport", "CNC Port", {str => cncport = str.toInt})
       opt("p", "port", "Port to run on.", {str => port = str.toInt})
+      //opt("l", "lemma", "Use lemmas instead of text", {str => lemma = str.toBoolean})
     }
 
     if(parser.parse(args)){
