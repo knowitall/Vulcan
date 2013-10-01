@@ -10,36 +10,28 @@ package edu.knowitall.vulcan.inference.matching
 
 
 import scala.Predef._
-import tratz.cmdline.{CommandLineOptions, CommandLineOptionsParser, ParsedCommandLine}
 import tratz.parse.{SimpleParseClient, SimpleParseServer, FullSystemWrapper}
-import tratz.parse.io.SentenceReader
-import tratz.parse.io.SentenceWriter
 import tratz.parse.types.{Token, Arc, Parse, Sentence}
 import scala.Predef.String
-import java.io._
 
-import scala.collection.JavaConversions._
-import scala.collection.immutable.HashMap
 
-import tratz.parse.util.ParseConstants
 import tratz.pos.PosTagger
+import java.util
 
 class CNCClient(host:String, port:Int){
 
   val client: SimpleParseClient = new SimpleParseClient(host, port)
 
-  def parse(phrase:String) = {
+  def parse(phrase:String): Option[String] = {
 
-    val sb = new StringBuilder
     try {
-
-      val sentence: Sentence = new Sentence(PosTagger.makeMeSomeTokens(phrase.split("\\s+")))
-      var request: SimpleParseServer.ParseRequest = null
-      request = new SimpleParseServer.ParseRequest(sentence)
-      val result: SimpleParseServer.ParseResult = client.sendRequest(request)
+      val sentence = new Sentence(PosTagger.makeMeSomeTokens(phrase.split("\\s+")))
+      val request = new SimpleParseServer.ParseRequest(sentence)
+      val result = client.sendRequest(request)
       if (result.getException != null) {
         System.err.println("Blah... something wrong")
         result.getException.printStackTrace
+        None
       }
       else {
         val fullResult: FullSystemWrapper.FullSystemResult = result.getResult
@@ -48,7 +40,11 @@ class CNCClient(host:String, port:Int){
         val srlArcs: Array[Arc] = if (srlLinks == null) null else srlLinks.getHeadArcs
         val sentenceCopy: Sentence = syntacticParse.getSentence
         import scala.collection.JavaConversions._
-        for (t <- sentenceCopy.getTokens) {
+        sentenceCopy.getTokens.headOption match {
+          case Some(head:Token) if head.getLexSense != null && head.getLexSense.trim.size > 0 => Some(head.getLexSense)
+          case _ => None
+        }
+        /**for (t <- sentenceCopy.getTokens) {
           //val arcHead: Arc = syntacticParse.getHeadArcs()(t.getIndex())
           //val srlArc: Arc = if (srlArcs == null) null else srlArcs(t.getIndex)
           val lexSense = t.getLexSense
@@ -56,11 +52,12 @@ class CNCClient(host:String, port:Int){
           //sb.append(t.getIndex + "\t" + t.getText + "\t" + t.getPos + "\t" + arcHead.getDependency + "\t" +
           //  arcHead.getHead.getIndex + "\t" + (if (t.getLexSense == null) "_" else t.getLexSense) + "\t" + (if (srlArc == null) "_" else srlArc.getSemanticAnnotation) + "\t" + (if (srlArc == null) "_" else srlArc.getHead.getIndex))
           sb.append("\n")
-        }
+        }*/
+
       }
     }
 
-    sb.toString
+
   }
 
 }
