@@ -50,6 +50,7 @@ object KBQueriesHelper{
 }
 
 class WordnetKB extends KB {
+
   val logger = LoggerFactory.getLogger(this.getClass)
 
   val _relations = "type of"::Nil
@@ -74,7 +75,7 @@ class WordnetKB extends KB {
     logger.info("Mock implementation. Returns single relation for type of.")
     val tokens = KBQueriesHelper.queries(query)
     logger.info("Tokens: " + tokens.mkString("\n"))
-    Seq(Axiom.fromTuple(Tuple.makeTuple("iron", "type of", "metal")))
+    Seq(Axiom.fromTuple(TupleHelper.from("iron", "type of", "metal")))
   }
 }
 
@@ -89,13 +90,24 @@ class CNCategorizerKB(host:String, port:Int) extends KB{
 
   /**
    * Entries that match the query string.
-   * @param query
-   * @param queryRelations
    * @return
    *
   def matchingEntries(query: String, queryRelations: Seq[String]): Seq[Axiom] = {
     matchingEntries(Tuple.makeTuple("iron nail", "composed of", "iron"))
   } */
+
+  def cncTuple(string:String) = {
+    val words = string.split(" ")
+    val head: String = words.head
+    val tail: String = words.last
+    client.parse(string) match {
+      case Some(relation:String) => {
+        logger.info("Using relation: "  + relation)
+        Some(TupleHelper.from(head, relation, tail))
+      }
+      case _ => None
+    }
+  }
 
   /**
    * Entries that match the query string.
@@ -106,8 +118,16 @@ class CNCategorizerKB(host:String, port:Int) extends KB{
   def matchingEntries(query: Tuple, queryRelations: Seq[String]) = {
     logger.info("Mock implementation. Returns single relation for composed of.")
     val tokens = KBQueriesHelper.queries(query)
-    tokens.map(client.parse(_))
-    Seq(Axiom.fromTuple(Tuple.makeTuple("iron nail", "composed of", "iron")))
+    val cncEntries = tokens.flatMap(token => {
+      cncTuple(token) match {
+        case Some(tuple:Tuple) => Some(Axiom.fromTuple(tuple))
+        case None => None
+      }
+    })
+    cncEntries.foreach(entry => logger.info("CNC entry: " + TupleHelper.lemma(entry.consequent.tuple)))
+
+    cncEntries
+    //Seq(Axiom.fromTuple(Tuple.makeTuple("iron nail", "composed of", "iron")))
   }
 
 }
