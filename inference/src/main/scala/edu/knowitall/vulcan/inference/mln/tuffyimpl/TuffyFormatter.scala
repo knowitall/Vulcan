@@ -27,13 +27,13 @@ object TuffyFormatter{
         case false => "T(%s, %s, %s)"
       }
       import TupleHelper._
-      fmtString.format(prune(tuple.arg1.text),
+      /**fmtString.format(prune(tuple.arg1.text),
         prune(tuple.rel.text),
-        prune(tuple.arg2s.map(_.text).mkString(" ")))
+        prune(tuple.arg2s.map(_.text).mkString(" ")))*/
 
-      /**fmtString.format(prune(lemma(tuple.arg1)),
+      fmtString.format(prune(lemma(tuple.arg1)),
                        prune(lemma(tuple.rel.terms)),
-                       prune(tuple.arg2s.map(lemma(_)).mkString(" "))) */
+                       prune(tuple.arg2s.map(lemma(_)).mkString(" ")))
      }
     val out = exportTuple(p.tuple)
     score match {
