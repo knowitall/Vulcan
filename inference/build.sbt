@@ -46,9 +46,9 @@ libraryDependencies ++= Seq(
     "net.databinder" %% "unfiltered-filter" % "0.6.5",
     //
     //Jena inference.
-    "com.hp.hpl.jena" % "sdb" % "1.3.4",
-    "org.apache.jena" % "apache-jena-libs" % "2.10.1",
-    "mysql" % "mysql-connector-java" % "5.0.2",
+    //"com.hp.hpl.jena" % "sdb" % "1.3.4",
+    //"org.apache.jena" % "apache-jena-libs" % "2.10.1",
+    //"mysql" % "mysql-connector-java" % "5.0.2",
     //
     //Tuffy inference
     "edu.wisc.cs.hazy" % "tuffy" % "0.3",
@@ -66,10 +66,16 @@ libraryDependencies ++= Seq(
     "com.github.scopt" %% "scopt" % "2.1.0",
     //
     //Wordnet
-    "net.sf.extjwnl" % "extjwnl" % "1.6.9"
+    "net.sf.extjwnl" % "extjwnl" % "1.6.9",
+    //
+    //
+    //
+    "edu.isi.tratz" % "afansparser" % "0.2"
 )
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
+
+javaOptions += "-Xmx4G"
 
 // custom options for high memory usage
 
