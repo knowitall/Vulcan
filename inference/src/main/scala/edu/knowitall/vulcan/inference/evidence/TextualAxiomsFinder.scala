@@ -42,10 +42,14 @@ class TextualAxiomsFinder(endpoint:String) extends AxiomsFinder{
     val query = QueryBuilder.and(TupleQuery.matchAnyQuery(proposition.consequent.tuple), corpusQuery)
     logger.info("Query: " + query)
     val resultsPage = client.query(query, start=0, rows=100)
-    val predicates = resultsPage.results.map(result => Predicate(result.extraction.tuple, 1.0))
 
-    Axiom.fromTuple(Tuple.makeTuple("metal", "conductor of", "electricity"))::Nil ++
-      predicates.map(new Axiom(Seq[Predicate](), _, 1.0))
+    import Axiom._
+    resultsPage.results
+               .sortBy(-_.score)
+               .map(result => fromPredicate(Predicate(result.extraction.tuple, result.score), result.score))
+
+    //Axiom.fromTuple(Tuple.makeTuple("metal", "conductor of", "electricity"))::Nil ++
+    //predicates.map(new Axiom(Seq[Predicate](), _, 1.0))
 
   }
 
