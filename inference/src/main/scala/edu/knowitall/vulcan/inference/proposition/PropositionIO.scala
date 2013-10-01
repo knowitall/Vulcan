@@ -20,6 +20,7 @@ import edu.knowitall.vulcan.inference.kb.Predicate
 import edu.knowitall.openie.Instance
 import scala.Some
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
+import edu.knowitall.vulcan.inference.utils.TupleHelper
 
 
 object QuestionIO{
@@ -84,10 +85,10 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
   def consequent: Predicate = c
   def text: String = {
     val astring = aseq.isEmpty match {
-      case false => aseq.map(a => tupleText(a.tuple)).mkString(" ")
+      case false => aseq.map(a => TupleHelper.text(a.tuple)).mkString(" ")
       case true => ""
     }
-    astring + " " + tupleText(consequent.tuple)
+    astring + " " + TupleHelper.text(consequent.tuple)
   }
 }
 
