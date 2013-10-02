@@ -20,6 +20,7 @@ case object EmptyQuery extends Query
 object Query {
 
   import play.api.libs.json._
+  import play.api.data.validation.ValidationError
 
   implicit val fieldQueryReader = Json.reads[FieldQuery]
   implicit val fieldQueryWriter = Json.writes[FieldQuery]
@@ -62,7 +63,7 @@ object Query {
           case error : JsError => error
         }
 
-        case _ => sys.error("invalid query json: " + Json.stringify(json))
+        case other => JsError(ValidationError("Invalid Query json: " + Json.stringify(other)))
       }
     }
   }
