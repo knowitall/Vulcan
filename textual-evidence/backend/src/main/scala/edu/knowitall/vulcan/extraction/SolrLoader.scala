@@ -46,62 +46,19 @@ class SolrLoader(urlString: String,
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  val solr = new ConcurrentUpdateSolrServer(urlString, batchSize, threads)
-             //new HttpSolrServer(urlString)
+  val solr = //new ConcurrentUpdateSolrServer(urlString, batchSize, threads)
+             new HttpSolrServer(urlString)
 
   def toSolrDocument(extraction: Extraction) = {
-
-    val tuple = extraction.tuple
 
     val doc = new SolrInputDocument()
 
     doc.setField("id", extraction.id)
     doc.setField("corpus", extraction.corpus)
-
-    tuple.arg1 match {
-      case terms: TermsArg => {
-        doc.setField("arg1", terms.text)
-        if(!terms.headword.isEmpty) {
-          doc.setField("arg1_headwords", terms.headword.get.map{ _.text }.mkString(" "))
-        }
-        doc.setField("arg1_details", Json.stringify(Json.toJson(terms.terms)))
-      }
-      /* we don't handle nested tuples yet */
-      case other => sys.error("Unhandled arg1 type: " + other.getClass)
-    }
-
-    doc.setField("rel", tuple.rel.text)
-    if(!tuple.rel.headword.isEmpty) {
-      doc.setField("rel_headwords", tuple.rel.headword.get.map{ _.text }.mkString(" "))
-    }
-    doc.setField("rel_details", Json.stringify(Json.toJson(tuple.rel.terms)))
-
-    tuple.arg2s foreach(arg2 => {
-      arg2 match {
-        case terms: TermsArg => {
-          doc.addField("arg2s", terms.text)
-          if(!terms.headword.isEmpty) {
-            doc.setField("arg2_headwords", terms.headword.get.map{ _.text }.mkString(" "))
-          }
-          doc.addField("arg2s_details", Json.stringify(Json.toJson((terms.terms))))
-        }
-        /* we don't handle nested tuples yet */
-        case other => sys.error("Unhandled arg1 type: " + other.getClass)
-      }})
-
-    tuple.context match {
-      case Some(c) => doc.setField("context", c.map{ _.text }.mkString(" "))
-      case None => ;
-    }
-
+    doc.setField("tuple", Json.stringify(Json.toJson(extraction.tuple)))
+    doc.setField("sentence", extraction.sentence)
     doc.setField("confidence", extraction.confidence)
-
-    doc.setField("sentence_text", extraction.sentence)
-    val sentenceDetailsJson = Json.stringify(Json.toJson(extraction.sentenceDetails))
-    doc.setField("sentence_details", sentenceDetailsJson )
-
-    doc.setField("passive", tuple.rel.passive)
-    doc.setField("negation", tuple.rel.negated)
+    doc.setField("sentence_details", Json.stringify(Json.toJson(extraction.sentenceDetails)))
 
     doc
   }
@@ -166,7 +123,7 @@ class SolrLoader(urlString: String,
 
     logger.info("All loaders loaded " + total + " total extractions")
 
-    solr.blockUntilFinished()
+    //solr.blockUntilFinished()
     solr.shutdown()
   }
 }

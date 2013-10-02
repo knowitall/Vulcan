@@ -83,7 +83,7 @@ case class TermsArg(terms: Seq[Term],
                     headword: Option[Seq[Term]] = None) 
   extends Arg
 { 
-  lazy val text = terms map { _.text } mkString(" ")
+  lazy val text = (terms map { _.text }).mkString(" ")
 }
 
 /**
@@ -96,9 +96,9 @@ case class Tuple(arg1: Arg,
                  context: Option[Seq[Term]] = None)  
   extends Arg 
 { 
-  lazy val text = arg1.text + " " + 
-                  rel.text + " " + 
-                  arg2s.map { _.text } mkString(" ")
+  lazy val text = "( " + arg1.text + " / " + 
+                  rel.text + " / " + 
+                  (arg2s.map { _.text } mkString("[ ", " / ", " ]")) + " )"  
 }
 
 /**

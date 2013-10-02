@@ -237,11 +237,8 @@ class Extractor(corpus: String, batchId: String) {
 
     def convertSrlNested(extr: SrlNestedExtraction) : Tuple = {
 
-      val relPart = new Part(extr.rel.text, offsets(extr.rel))
-      val rel = relationForPart(relPart, false, false) // TODO get negation, passive flags
-
       Tuple(convertSrlNestedArg(extr.arg1),
-            relForSrlRelation(extr.rel, false, false), // TODO get negation, passive
+            relForSrlRelation(extr.rel, extr.extr.negated, extr.extr.passive),
             extr.arg2s.map(convertSrlNestedArg))
     }
     

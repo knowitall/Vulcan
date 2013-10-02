@@ -26,7 +26,7 @@ object WebQueryHandler extends Controller {
 
     val page: Int = request.queryString("page").head.toInt
     val tuple: Tuple = Tuple.makeTuple(arg1, rel, arg2)
-    val keywordQuery = all("text", keywords.split("\\s+"))
+    val keywordQuery = all("tuple", keywords.split("\\s+"))
     val corpusFilter = fq("corpus", corpus)
 
     var queries = Seq(
