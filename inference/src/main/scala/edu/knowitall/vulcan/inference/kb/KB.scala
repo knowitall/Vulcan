@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 import edu.knowitall.vulcan.inference.utils.{Tokenizer, TupleHelper}
 import edu.knowitall.vulcan.inference.matching.CNCClient
 
-abstract class KB {
+abstract class  KB {
 
   def relations:Seq[String]
 
@@ -83,6 +83,7 @@ class CNCategorizerKB(host:String, port:Int) extends KB{
 
 
   val logger = LoggerFactory.getLogger(this.getClass)
+  val relationMap = ("substance-material-ingredient" -> "composed of"::Nil).toMap
   val _relations = "composed of"::Nil
   val client = new CNCClient(host, port)
 
@@ -103,7 +104,8 @@ class CNCategorizerKB(host:String, port:Int) extends KB{
     client.parse(string) match {
       case Some(relation:String) => {
         logger.info("Using relation: "  + relation)
-        Some(TupleHelper.from(head, relation, tail))
+        val name = relationMap.getOrElse(relation, relation)
+        Some(TupleHelper.from(head, name, tail))
       }
       case _ => None
     }
@@ -125,7 +127,6 @@ class CNCategorizerKB(host:String, port:Int) extends KB{
       }
     })
     cncEntries.foreach(entry => logger.info("CNC entry: " + TupleHelper.lemma(entry.consequent.tuple)))
-
     cncEntries
     //Seq(Axiom.fromTuple(Tuple.makeTuple("iron nail", "composed of", "iron")))
   }
