@@ -8,7 +8,7 @@ import edu.knowitall.vulcan.common.TermsArg
 import edu.knowitall.vulcan.common.Relation
 import edu.knowitall.vulcan.common.Extraction
 
-import edu.knowitall.vulcan.common.serialization.TupleSerialization.termReader
+import edu.knowitall.vulcan.common.serialization.TupleSerialization._
 
 import edu.knowitall.vulcan.evidence.query.Query
 import edu.knowitall.vulcan.evidence.query.FieldQuery
@@ -72,7 +72,8 @@ class QueryExecutor(solrUrl: String) {
     }
 
     val sq = new SolrQuery()
-    sq.setQuery(getSolrQueryString(query))
+    val queryString = getSolrQueryString(query)
+    sq.setQuery(queryString)
     sq.setIncludeScore(true)
 
     sq
@@ -80,48 +81,18 @@ class QueryExecutor(solrUrl: String) {
 
   private def solrDocToQueryResult(doc: SolrDocument) : QueryResult = {
 
-    // TODO this doesn't extract everything we have in the extraction 
-    // document, like headwords, lemmas, detailed sentence parse info, etc
-    val arg1json = doc.getFieldValue("arg1_details").asInstanceOf[String]
-    val arg1terms : Seq[Term] = 
-      Json.fromJson[Seq[Term]](Json.parse(arg1json)) match {
-        case JsSuccess(terms, _) => terms
-        case JsError(error) => Seq(Term("error"))
-      }
-    val arg1 = TermsArg(arg1terms)
-
-    val relJson = doc.getFieldValue("rel_details").asInstanceOf[String]
-    val relTerms : Seq[Term] = 
-      Json.fromJson[Seq[Term]](Json.parse(relJson)) match {
-        case JsSuccess(terms, _) => terms
-        case JsError(error) => Seq(Term("error"))
-      }
-    val relPassive = doc.getFieldValue("passive").asInstanceOf[Boolean]
-    val relNegated = doc.getFieldValue("negation").asInstanceOf[Boolean]
-
-    // arg2s are optional, so check if they exist and if so collect them
-    val arg2s : Seq[TermsArg] = if(doc.getFieldValue("arg2s") != null) { 
-      val arg2sJson =
-        doc.getFieldValues("arg2s_details").asInstanceOf[Collection[String]].toIndexedSeq
-      val arg2TermSeqs = arg2sJson map { arg2Json => 
-        Json.fromJson[Seq[Term]](Json.parse(arg2Json)) match {
-          case JsSuccess(terms, _) => terms
-          case JsError(error) => Seq(Term("error"))
-        }
-      }
-      arg2TermSeqs map { terms => TermsArg(terms) }
-    } else {
-      Nil 
+    val tupleJson = doc.getFieldValue("tuple").asInstanceOf[String]
+    val tuple = Json.fromJson[Tuple](Json.parse(tupleJson) \ "tuple") match {
+      case JsSuccess(tuple, _) => tuple 
+      case JsError(error) => sys.error("Failed to parse: " + tupleJson + ": " + JsError.toFlatJson(error))
     }
-      
-    val tuple = Tuple(arg1, Relation(relTerms, None, relNegated, relPassive), arg2s)
 
-    val sentence = doc.getFieldValue("sentence_text").asInstanceOf[String]
+    val sentence = doc.getFieldValue("sentence").asInstanceOf[String]
     val sentenceDetailsJson = doc.getFieldValue("sentence_details").asInstanceOf[String]
     val sentenceDetails : Seq[Term] = 
       Json.fromJson[Seq[Term]](Json.parse(sentenceDetailsJson)) match {
         case JsSuccess(terms, _) => terms
-        case JsError(error) => Seq(Term("error"))
+        case JsError(error) => sys.error("Failed to parse: " + sentenceDetailsJson + ": " + JsError.toFlatJson(error))
       }
 
     val confidence = doc.getFieldValue("confidence").asInstanceOf[JDouble]
@@ -131,8 +102,7 @@ class QueryExecutor(solrUrl: String) {
     val extraction = Extraction(tuple, sentence, sentenceDetails, confidence, id, corpus)
 
     // right now scoring uses configdence.  This isn't good, but we have to use something as
-    // a placeholder and lucene scores are even worse.
-    val score = doc.getFieldValue("confidence").asInstanceOf[JDouble]
+    val score = doc.getFieldValue("score").asInstanceOf[JFloat].doubleValue()
     
     QueryResult(extraction, score)
   }

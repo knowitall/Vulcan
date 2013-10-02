@@ -15,9 +15,7 @@
     <li style="padding-left: 0px; margin-bottom: 10px; margin-left: 1px ">
       <ul style="padding-left: 15px">
         <li style="padding-left: 0px"> 
-          @result.extraction.tuple.arg1.text / 
-          @result.extraction.tuple.rel.text / 
-          @result.extraction.tuple.arg2s.map(term => term.text).mkString(" ")
+          @result.extraction.tuple.text 
         </li>
         <li style="padding-left: 10px" class="small"> 
           <span class="label">from</span>@result.extraction.corpus
