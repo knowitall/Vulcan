@@ -22,6 +22,8 @@ class CNCClient(host:String, port:Int){
 
   val client: SimpleParseClient = new SimpleParseClient(host, port)
 
+  val lexSenseMap = ("SUBSTANCE-MATERIAL-INGREDIENT" -> "composed of"::Nil).toMap
+
   def parse(phrase:String): Option[String] = {
 
     try {
@@ -41,7 +43,7 @@ class CNCClient(host:String, port:Int){
         val sentenceCopy: Sentence = syntacticParse.getSentence
         import scala.collection.JavaConversions._
         sentenceCopy.getTokens.headOption match {
-          case Some(head:Token) if head.getLexSense != null && head.getLexSense.trim.size > 0 => Some(head.getLexSense)
+          case Some(head:Token) if head.getLexSense != null && head.getLexSense.trim.size > 0 => Some(lexSenseMap.getOrElse(head.getLexSense, head.getLexSense))
           case _ => None
         }
         /**for (t <- sentenceCopy.getTokens) {
