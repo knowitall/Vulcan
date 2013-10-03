@@ -22,7 +22,7 @@ object TextualAxiomsFinder{
 
   def main(args:Array[String]){
     if(args.size > 0){
-      val finder = new TextualAxiomsFinder(args(0))
+      val finder = new TextualAxiomsFinder(args(0), numTuples=100)
       finder.find(new Proposition(Seq[Predicate](), Predicate(Tuple.makeTuple("metal", "conductor", "electricity"), 1.0)))
     }else{
       println("Usage: " + TextualAxiomsFinder.getClass.getCanonicalName + " <te client url>")
@@ -30,7 +30,7 @@ object TextualAxiomsFinder{
   }
 }
 
-class TextualAxiomsFinder(endpoint:String) extends AxiomsFinder{
+class TextualAxiomsFinder(endpoint:String, numTuples:Int) extends AxiomsFinder{
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -53,7 +53,7 @@ class TextualAxiomsFinder(endpoint:String) extends AxiomsFinder{
     //val queries = fieldQueries(proposition.consequent.tuple).map(QueryBuilder.and(TupleQuery.partialMatchQuery()))
     val query = QueryBuilder.and(TupleQuery.matchAnyQuery(proposition.consequent.tuple), corpusQuery)
     logger.info("Query: " + query)
-    val resultsPage = client.query(query, start=0, rows=100)
+    val resultsPage = client.query(query, start=0, rows=numTuples)
 
     import Axiom._
     resultsPage.results
