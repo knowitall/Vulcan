@@ -74,9 +74,10 @@ object TuffyFormatter{
   }
 
   def exportQueryFile(instance:MLNInstance, file:File) = {
-    val output = exportRules(instance.query.iterator, false, true)   //Don't output weights for query predicates.
+    val output = "//Original query\n" + exportRules(instance.query.iterator, false, true)   //Don't output weights for query predicates.
+    val variants = "//Wildcard variants\n" + exportRules(instance.wildcardQueryVariants.iterator, false, true)
     val writer = new PrintWriter(file)
-    writer.println(output)
+    writer.println(output + "\n" + variants)
     writer.close
   }
 
