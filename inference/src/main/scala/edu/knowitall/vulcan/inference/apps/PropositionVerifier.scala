@@ -9,13 +9,11 @@ package edu.knowitall.vulcan.inference.apps
  */
 
 
-import edu.knowitall.vulcan.inference.evidence.{TextualAxiomsFinder, AxiomsFinder, Evidence}
+import edu.knowitall.vulcan.inference.evidence.{TextualAxiomsFinder, AxiomsFinder}
 import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.kb._
 import edu.knowitall.vulcan.inference.mln.tuffyimpl._
 import org.slf4j.LoggerFactory
-import edu.knowitall.vulcan.inference.mln.tuffyimpl.InferenceResults
-import scala.Some
 import java.io.File
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.InferenceResults
 import edu.knowitall.vulcan.inference.evidence.Evidence
@@ -75,6 +73,7 @@ object PropositionVerifier {
     var tempDir = ""
     var host = ""
     var port = 0
+    var numTuples = 10
     val parser = new OptionParser() {
       arg("endpoint", "Textual evidence client endpoint.", {str => endpoint = str})
       arg("tuffyConfFile", "Tuffy conf file.", {str => tuffyConfFile = str})
@@ -82,17 +81,18 @@ object PropositionVerifier {
       arg("tempDir", "Temporary directory to store MLN instance files.", {str => tempDir = str})
       arg("host", "CNC Host.", {str => host = str})
       arg("port", "Port", {str => port = str.toInt})
+      opt("n", "numTuples", "Number of top textual evidence tuples to use.", {str => numTuples = str.toInt})
     }
 
     if (!parser.parse(args)) return
 
-    val verifier = verifierInstance(endpoint, tuffyConfFile, rulesFile, tempDir, host, port)
+    val verifier = verifierInstance(endpoint, tuffyConfFile, rulesFile, tempDir, host, port, numTuples)
     import TupleHelper._
     val tupleRegex = """\((.*?), (.*?), (.*)\)""".r
     println("Enter Prop[(arg1, rel, arg2)]: ")
     for( ln <- io.Source.stdin.getLines() ) {
       val tupleRegex(arg1, rel, arg2) = ln
-      val pred = new Predicate(from(arg1, rel, arg2), 1.0)
+      val pred = new Predicate(from(arg1, rel, arg2, addLemmas=true), 1.0)
       val prop = new Proposition(Seq[Predicate](), pred)
       val evidence = verifier.findEvidence(prop)
       verifier.exportEvidence(evidence)
@@ -104,8 +104,8 @@ object PropositionVerifier {
   }
 
 
-  def verifierInstance(endpoint: String, tuffyConfFile: String, rulesFile: String, tempDir: String, host:String, port:Int) = {
-    val taf = new TextualAxiomsFinder(endpoint)
+  def verifierInstance(endpoint: String, tuffyConfFile: String, rulesFile: String, tempDir: String, host:String, port:Int, numTuples:Int) = {
+    val taf = new TextualAxiomsFinder(endpoint, numTuples)
     val kbf = new KBAxiomFinder(new WordnetKB :: new CNCategorizerKB(host, port) :: Nil)
     val finders = Seq(taf, kbf)
     val tuffy = new TuffyWrapper(tuffyConfFile)
