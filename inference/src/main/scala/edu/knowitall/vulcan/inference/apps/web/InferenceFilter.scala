@@ -86,8 +86,8 @@ object InferenceFilter {
 
   var verifier:PropositionVerifier = null
 
-  def setup(endpoint:String, tuffyConfFile:String, rulesFile:String, tempDir:String, host:String, port:Int) = {
-    val taf = new TextualAxiomsFinder(endpoint)
+  def setup(endpoint:String, tuffyConfFile:String, rulesFile:String, tempDir:String, host:String, port:Int, numTuples:Int) = {
+    val taf = new TextualAxiomsFinder(endpoint, numTuples)
     val kbf = new KBAxiomFinder(new WordnetKB::new CNCategorizerKB(host, port)::Nil)
     val finders = Seq(taf, kbf)
     val tuffy = new TuffyWrapper(tuffyConfFile)
@@ -109,7 +109,7 @@ object InferenceFilter {
       if(hasKey(req, "query")){
         val query = getQuery(req)
         val tupleRegex(arg1, rel, arg2) = query
-        val pred = new Predicate(from(arg1, rel, arg2), 1.0)
+        val pred = new Predicate(from(arg1, rel, arg2, addLemmas=true), 1.0)
         logger.info("Proposition predicate: " + pred.tuple.toString)
         val proposition = new Proposition(Seq[Predicate](), pred)
 
@@ -133,6 +133,7 @@ object InferenceFilter {
     var tempDir = "./"
     var host = ""
     var cncport = 0
+    var numTuples = 10
     var lemma = false
     val parser = new OptionParser() {
       arg("endpoint", "TE client endpoint url. (e.g. http://rv-n16.cs.washington.edu:9191/api/query)", {str => endpoint = str})
@@ -142,11 +143,12 @@ object InferenceFilter {
       arg("host", "CNC Host.", {str => host = str})
       arg("cncport", "CNC Port", {str => cncport = str.toInt})
       opt("p", "port", "Port to run on.", {str => port = str.toInt})
+      opt("n", "numTuples", "Number of top textual evidence tuples to use.", {str => numTuples = str.toInt})
       //opt("l", "lemma", "Use lemmas instead of text", {str => lemma = str.toBoolean})
     }
 
     if(parser.parse(args)){
-      setup(endpoint, tuffyConfFile, rulesFile, tempDir, host, cncport)
+      setup(endpoint, tuffyConfFile, rulesFile, tempDir, host, cncport, numTuples)
       unfiltered.netty.Http(port).plan(intentVal).run()
     }else{
       println(parser.usage)
