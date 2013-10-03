@@ -19,10 +19,7 @@ import tuffy.mln.Clause
 import scala.collection.JavaConversions._
 
 
-case class InferenceResults(marginals:Map[String, Double], relevantClauses:Seq[String]){
-
-
-}
+case class InferenceResults(marginals:Map[String, Double], relevantClauses:Seq[String]){}
 
 class PartInferDebug extends Infer{
 
