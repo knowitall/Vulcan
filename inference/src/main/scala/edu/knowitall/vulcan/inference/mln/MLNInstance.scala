@@ -8,22 +8,20 @@ package edu.knowitall.vulcan.inference.mln
  * To change this template use File | Settings | File Templates.
  */
 
-import org.slf4j.LoggerFactory
 import edu.knowitall.vulcan.inference.kb._
-import scala.collection.mutable.ArrayBuffer
-import java.io.{PrintWriter, File}
-import edu.knowitall.vulcan.common.Term
-import edu.knowitall.vulcan.common.TermsArg
-import scala.Some
-import edu.knowitall.vulcan.inference.evidence.Evidence
 import edu.knowitall.vulcan.inference.kb.Predicate
-import edu.knowitall.vulcan.common.Tuple
 import edu.knowitall.vulcan.inference.utils.TupleHelper
 
 case class MLNInstance(query:Seq[Axiom],
                        predicateDefinitions:Seq[Predicate],
                        rules:Seq[WeightedRule],
                        evidence:Iterator[Axiom]) {
+
+
+  def wildcardQueryVariants = query.flatMap(q => {
+    TupleHelper.wildcardVaiants(q.consequent.tuple)
+               .map(variant => Axiom.fromTuple(variant, 1.0))
+  })
 }
 
 
