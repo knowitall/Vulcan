@@ -51,19 +51,23 @@ class TextualAxiomsFinder(endpoint:String, numTuples:Int) extends AxiomsFinder{
 
   def find(proposition:Proposition) = {
     //val queries = fieldQueries(proposition.consequent.tuple).map(QueryBuilder.and(TupleQuery.partialMatchQuery()))
-    val query = QueryBuilder.and(TupleQuery.matchAnyQuery(proposition.consequent.tuple), corpusQuery)
-    logger.info("Query: " + query)
-    val resultsPage = client.query(query, start=0, rows=numTuples)
-
-    import Axiom._
-    resultsPage.results
-               .sortBy(-_.score)
-               .map(result => fromPredicate(Predicate(result.extraction.tuple, result.score), result.score))
-
+    val propTuple = proposition.consequent.tuple
+    val variants = TupleHelper.wildcardVaiants(propTuple)
+    find(propTuple) ++ variants.flatMap(variant => find(variant))
     //Axiom.fromTuple(Tuple.makeTuple("metal", "conductor of", "electricity"))::Nil ++
     //predicates.map(new Axiom(Seq[Predicate](), _, 1.0))
 
   }
 
 
+  def find(propTuple: Tuple): Seq[Axiom] = {
+    val query = QueryBuilder.and(TupleQuery.matchAnyQuery(propTuple), corpusQuery)
+    logger.info("Query: " + query)
+    val resultsPage = client.query(query, start = 0, rows = numTuples)
+
+    import Axiom._
+    resultsPage.results
+      .sortBy(-_.score)
+      .map(result => fromPredicate(Predicate(result.extraction.tuple, result.score), result.score))
+  }
 }
