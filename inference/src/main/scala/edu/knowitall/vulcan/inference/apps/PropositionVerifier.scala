@@ -47,17 +47,7 @@ class PropositionVerifier(finders:Seq[AxiomsFinder],
     runTuffy()
   }
 
-  def runTuffy(): String = {
-    tuffy.runTuffyNative(tempDirectory) match {
-      case Some(results: InferenceResults) => {
-        "Output: " + results.marginals.mkString("\n")
-      }
-      case None => {
-        logger.error("No results from inference.")
-        "No results from inference."
-      }
-    }
-  }
+  def runTuffy() = tuffy.runTuffyNative(tempDirectory)
 }
 
 object PropositionVerifier {
