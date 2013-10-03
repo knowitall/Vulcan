@@ -42,10 +42,36 @@ object TupleHelper {
                                              tuple.arg2s.map(lemma).mkString(" "))
 
 
-  def from(arg1:String, rel:String, arg2:String) = {
-    def arg(text:String) = TermsArg(Seq(Term(text, Some(Tokenizer.lemmatizeString(text)))))
-    def relation(text:String) = Relation(Seq(Term(text, Some(Tokenizer.lemmatizeString(text)))))
+  def fromLemmas(arg1:String, rel:String, arg2:String) = {
+    def arg(text:String) = TermsArg(Seq(Term(text, Some(text))))
+    def relation(text:String) = Relation(Seq(Term(text, Some(text))))
     Tuple(arg(arg1), relation(rel), Seq(arg(arg2)))
   }
+
+  def from(arg1:String, rel:String, arg2:String, addLemmas:Boolean = false) = {
+    def lemmasOption(string:String) = addLemmas match {
+      case true => Some(Tokenizer.lemmatizeString(string))
+      case false => None
+    }
+    def arg(text:String) = TermsArg(Seq(Term(text, lemmasOption(text))))
+    def relation(text:String) = Relation(Seq(Term(text, lemmasOption(text))))
+    Tuple(arg(arg1), relation(rel), Seq(arg(arg2)))
+  }
+
+
+  val emptyTerm = Term("", Some(""))
+  val wildcardArg = TermsArg(Seq(emptyTerm))
+  val wildcardRel = Relation(Seq(emptyTerm))
+
+  def wildcardVaiants(tuple:Tuple) = {
+    val arg1 = tuple.arg1
+    val rel = tuple.rel
+    val arg2s = tuple.arg2s
+    Tuple(arg1, rel, Seq[Arg]())::
+    Tuple(arg1, wildcardRel, arg2s)::
+    Tuple(wildcardArg, rel, arg2s)::Nil
+
+  }
+
 
 }
