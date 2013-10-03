@@ -14,26 +14,33 @@ import org.apache.commons.lang.StringEscapeUtils
 import edu.knowitall.openie.OpenIE
 import edu.knowitall.tool.parse.ClearParser
 import edu.knowitall.tool.srl.ClearSrl
-import scala.xml.Elem
+import scala.xml.{Node, Elem}
 import edu.knowitall.vulcan.inference.kb._
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
 import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.evidence.TextualAxiomsFinder
 import edu.knowitall.vulcan.inference.apps.PropositionVerifier
-import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyWrapper
+import edu.knowitall.vulcan.inference.mln.tuffyimpl.{InferenceResults, TuffyWrapper}
 import java.io.File
 import scopt.mutable.OptionParser
 import scala.Some
 import unfiltered.response.ResponseString
+import scala.collection.AbstractSeq
 
 object HtmlHelper {
 
   val formName = "scoreprop"
   def form(query: String) = {
+    <div align="left">
     <form action={formName}>
-      Query:<textarea name="query" cols="80">{query}</textarea>
-      <input name="login" type="submit" value="submit"/>
+      <table>
+      <tr>
+      <td><textarea name="query" cols="80">{query}</textarea></td>
+      <td><input name="login" type="submit" value="Find Evidence"/></td>
+      </tr>
+      </table>
     </form>
+    </div>
   }
 
 }
@@ -77,8 +84,7 @@ object InferenceFilter {
     if(openie == null) openie = new OpenIE(new ClearParser, new ClearSrl)
   }
 
-  def response(query:String, result:String):String = {
-    val resultsDiv: Elem = <div>{result}</div>
+  def response(query:String, resultsDiv:Elem):String = {
     val queryDiv: Elem = form(query)
     val html = <html>{queryDiv} {resultsDiv}</html>
     html.toString
@@ -104,6 +110,20 @@ object InferenceFilter {
   def wrapXML(string:String)  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" + string
   val scorePropPath = "/" + HtmlHelper.formName
 
+  def toResultsXml(resultsOption: Option[InferenceResults]) = resultsOption match {
+    case Some(results:InferenceResults) => {
+      def row(string:String, double:Double) = <tr><td>{string}</td><td>{"%.2f".format(double)}</td></tr>
+      val header = <tr><th>Evidence</th><th>Probability</th></tr>
+      val rows = results.marginals.toSeq.sortBy(-_._2)
+            .map(pair => row(pair._1, pair._2))
+      <b>Results:</b><br/><br/><table>{header}{rows}</table>;
+    }
+    case None => {
+      logger.error("No results from inference.")
+      <b>"No results from inference."</b>
+    }
+  }
+
   val intentVal = unfiltered.netty.cycle.Planify {
     case req @ GET(Path(scorePropPath)) =>{
       if(hasKey(req, "query")){
@@ -115,8 +135,9 @@ object InferenceFilter {
 
         val evidence = verifier.findEvidence(proposition)
         verifier.exportEvidence(evidence)
-        val result = verifier.runTuffy()
-        ResponseString(wrapHTML(response(query, result)))
+        val inferenceResults = verifier.runTuffy()
+        val xml = <div>{toResultsXml(inferenceResults)}</div>
+        ResponseString(wrapHTML(response(query, xml)))
       }else{
         ResponseString(wrapHTML(form("").toString()))
       }
