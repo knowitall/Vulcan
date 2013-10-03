@@ -115,7 +115,7 @@ object PropositionIO {
     PropositionIO.fromFile(new File(args(0)))
                  .foreach(proposition => println(proposition.toString))
 
-    val testProposition = new Proposition(Seq[Predicate](), new Predicate(from("iron_nail", "conductorOf", "electricity"), 1.0))
+    val testProposition = new Proposition(Seq[Predicate](), new Predicate(from("iron_nail", "conductorOf", "electricity", addLemmas = true), 1.0))
 
   }
 
