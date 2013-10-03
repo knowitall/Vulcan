@@ -75,7 +75,7 @@ class WordnetKB extends KB {
     logger.info("Mock implementation. Returns single relation for type of.")
     val tokens = KBQueriesHelper.queries(query)
     logger.info("Tokens: " + tokens.mkString("\n"))
-    Seq(Axiom.fromTuple(TupleHelper.from("iron", "type of", "metal")))
+    Seq(Axiom.fromTuple(TupleHelper.from("iron", "type of", "metal", addLemmas = true)))
   }
 }
 
@@ -83,7 +83,7 @@ class CNCategorizerKB(host:String, port:Int) extends KB{
 
 
   val logger = LoggerFactory.getLogger(this.getClass)
-  val relationMap = ("substance-material-ingredient" -> "composed of"::Nil).toMap
+  val relationMap = ("SUBSTANCE-MATERIAL-INGREDIENT" -> "composed of"::Nil).toMap
   val _relations = "composed of"::Nil
   val client = new CNCClient(host, port)
 
@@ -104,8 +104,8 @@ class CNCategorizerKB(host:String, port:Int) extends KB{
     client.parse(string) match {
       case Some(relation:String) => {
         logger.info("Using relation: "  + relation)
-        val name = relationMap.getOrElse(relation, relation)
-        Some(TupleHelper.from(head, name, tail))
+        val name = relation//relationMap.getOrElse(relation, relation)
+        Some(TupleHelper.from(head, name, tail, addLemmas = true))
       }
       case _ => None
     }
