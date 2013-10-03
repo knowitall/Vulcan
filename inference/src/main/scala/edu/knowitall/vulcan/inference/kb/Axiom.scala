@@ -28,7 +28,7 @@ object Predicate{
   def fromBinaryPredicateString(string:String): Option[Predicate] = {
     try{
       val re(arg1:String, rel:String, arg2:String) = string
-      Some(new Predicate(TupleHelper.from(arg1.trim, rel.trim, arg2.trim), 1.0))
+      Some(new Predicate(TupleHelper.fromLemmas(arg1.trim, rel.trim, arg2.trim), 1.0))
     } catch{
       case e:Exception => {
         println("Failed to parse binary relation string: " + string)
