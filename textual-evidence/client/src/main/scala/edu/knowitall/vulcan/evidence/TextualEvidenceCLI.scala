@@ -8,6 +8,8 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 
 import scopt.immutable.OptionParser
 
+import edu.knowitall.vulcan.common.serialization.ExtractionSerialization
+
 object TextualEvidenceCLI extends App {
 
   case class Config(val endpoint: String = "",
@@ -57,7 +59,10 @@ object TextualEvidenceCLI extends App {
   val client = new TextualEvidenceClient(endpoint)
   val tuple = Tuple.makeTuple(arg1, rel, arg2)
 
-  val resultPage = client.query(TupleQuery.matchQuery(tuple))
+  val resultPage = client.query(TupleQuery.forTuple(tuple))
 
-  println(resultPage)
+  resultPage.results.foreach(result => {
+    val extraction = ExtractionSerialization.toJson(result.extraction, true)
+    println(extraction)
+  })
 }
