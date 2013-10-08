@@ -24,6 +24,8 @@ resolvers ++= Seq("scala-tools.org" at "http://scala-tools.org/repo-releases",
 
 libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-library" % "2.10.2",
+    // Vulcan Halo Core 
+    "com.vulcan.halo" % "vulcan-ha-core" % "0.1",
     //
     // Open IE and NLP Tools.
     //
