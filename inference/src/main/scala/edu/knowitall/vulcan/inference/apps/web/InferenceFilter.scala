@@ -14,7 +14,7 @@ import org.apache.commons.lang.StringEscapeUtils
 import edu.knowitall.openie.OpenIE
 import edu.knowitall.tool.parse.ClearParser
 import edu.knowitall.tool.srl.ClearSrl
-import scala.xml.{Node, Elem}
+import scala.xml.Elem
 import edu.knowitall.vulcan.inference.kb._
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
 import edu.knowitall.vulcan.inference.proposition.Proposition
@@ -25,24 +25,10 @@ import java.io.File
 import scopt.mutable.OptionParser
 import scala.Some
 import unfiltered.response.ResponseString
-import scala.collection.AbstractSeq
 
 object HtmlHelper {
-
-  val formName = "scoreprop"
-  def form(query: String) = {
-    <div align="left">
-    <form action={formName}>
-      <table>
-      <tr>
-      <td><textarea name="query" cols="80">{query}</textarea></td>
-      <td><input name="login" type="submit" value="Find Evidence"/></td>
-      </tr>
-      </table>
-    </form>
-    </div>
-  }
-
+  def wrapHtml(content:String) = "<html>" + content + "</html>"
+  def escapeHTMLChars(string:String) = StringEscapeUtils.escapeHtml(string)
 }
 
 object ReqHelper {
@@ -64,13 +50,8 @@ object InferenceFilter {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  import HtmlHelper._
   import ReqHelper._
 
-  def wrapHtml(content:String) = "<html>" + content + "</html>"
-
-
-  def escapeHTMLChars(string:String) = StringEscapeUtils.escapeHtml(string)
 
 
   var openie:OpenIE = null
@@ -106,9 +87,7 @@ object InferenceFilter {
 
   val tupleRegex = """\((.*?), (.*?), (.*)\)""".r
 
-  def wrapHTML(string:String)  = "<html>" + string + "</html>"
   def wrapXML(string:String)  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" + string
-  val scorePropPath = "/" + HtmlHelper.formName
 
   def toResultsXml(resultsOption: Option[InferenceResults]) = resultsOption match {
     case Some(results:InferenceResults) => {
@@ -124,6 +103,21 @@ object InferenceFilter {
     }
   }
 
+  val formName = "scoreprop"
+  val scorePropPath = "/" + formName
+  def form(query: String) = {
+    <div align="left">
+      <form action={formName}>
+        <table>
+          <tr>
+            <td><textarea name="query" cols="80">{query}</textarea></td>
+            <td><input name="login" type="submit" value="Find Evidence"/></td>
+          </tr>
+        </table>
+      </form>
+    </div>
+  }
+  import HtmlHelper._
   val intentVal = unfiltered.netty.cycle.Planify {
     case req @ GET(Path(scorePropPath)) =>{
       if(hasKey(req, "query")){
@@ -137,9 +131,9 @@ object InferenceFilter {
         verifier.exportEvidence(evidence)
         val inferenceResults = verifier.runTuffy()
         val xml = <div>{toResultsXml(inferenceResults)}</div>
-        ResponseString(wrapHTML(response(query, xml)))
+        ResponseString(wrapHtml(response(query, xml)))
       }else{
-        ResponseString(wrapHTML(form("").toString()))
+        ResponseString(wrapHtml(form("").toString()))
       }
     }
     case _ => ResponseString("Unknown request.")

@@ -41,25 +41,33 @@ object QuestionIO{
 
     splits.drop(10).flatMap(x => {
       if(!keys.contains(x)){
-        val text = x.replaceAll("(.*?)Is it true that", "").replaceAll("""\?""", ".").trim.capitalize
-
-
-        var simplifiedText = X_is_Y_that_Z.findFirstMatchIn(text) match {
-          case Some(m:Regex.Match) => {
-            val X_is_Y_that_Z(x, f1, y, f2, z) = text
-            x + " " + z
-          }
-          case _ => ""
-        }
-        if(X_is_Y_inwhich_Z.findFirstMatchIn(text) != None){
-          simplifiedText = ""
-        }
-        Some(new Assertion(x, openie.extract(text), openie.extract(simplifiedText)))
+        val r = propositionText(x)
+        var simplifiedText: String = r._1
+        val text: String = r._2
+        val tuples = openie.extract(text)
+        val simplified = openie.extract(simplifiedText)
+        Some(new Assertion(x, tuples, simplified))
       }else{
         None
       }
     })
   }
+
+  def propositionText(x: String): (String, String) = {
+    val text = x.replaceAll("(.*?)Is it true that", "").replaceAll( """\?""", ".").trim.capitalize
+    var simplifiedText = X_is_Y_that_Z.findFirstMatchIn(text) match {
+      case Some(m: Regex.Match) => {
+        val X_is_Y_that_Z(x, f1, y, f2, z) = text
+        x + " " + z
+      }
+      case _ => ""
+    }
+    if (X_is_Y_inwhich_Z.findFirstMatchIn(text) != None) {
+      simplifiedText = ""
+    }
+    (simplifiedText, text)
+  }
+
   def fromFile(file:File)  = Source.fromFile(file).getLines().flatMap(fromLine(_))
 }
 
@@ -89,6 +97,14 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
       case true => ""
     }
     astring + " " + TupleHelper.text(consequent.tuple)
+  }
+}
+
+object Propostion{
+  val trueThatRe = """Is it true that (.*?)?""".r
+  def fromTrueThatQuestion(question:String) = {
+    val trueThatRe(string:String) = question
+    string
   }
 }
 
