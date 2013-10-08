@@ -1,3 +1,2 @@
 1.0 T(a1, rel, a2);T(b, "composed of", a1) => T(b, rel, a2)
-1.0 T(a1, rel, a2);T(b, "SUBSTANCEMATERIALINGREDIENT", a1) => T(b, rel, a2)
 1.0 T(a1, rel, a2);T(b, "type of", a1) => T(b, rel, a2)

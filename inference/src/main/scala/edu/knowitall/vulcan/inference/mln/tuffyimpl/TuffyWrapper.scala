@@ -34,7 +34,7 @@ class TuffyWrapper(confFile:String){
       "-r"::outfile.getAbsolutePath ::
       "-printResultsAsPrologFacts"::
       "-mcsatSamples"::"1000"::
-      "-numInfIters":: "2"::
+      "-numInfIters":: "1"::
       Nil
   }
   def runTuffyNative(tempDirectory:String): Option[InferenceResults] = {

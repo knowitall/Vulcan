@@ -9,13 +9,29 @@ package edu.knowitall.vulcan.inference.mln.tuffyimpl
  */
 
 import edu.knowitall.vulcan.inference.kb.{WeightedRule, Predicate}
-import edu.knowitall.vulcan.common.{Term, TermsArg, Arg, Tuple}
+import edu.knowitall.vulcan.common.Tuple
 import java.io.{PrintWriter, File}
 import edu.knowitall.vulcan.inference.mln.MLNInstance
 import edu.knowitall.vulcan.inference.utils.TupleHelper
+import scala.util.matching.Regex
 
 object TuffyFormatter{
 
+  val withQuotesString = """T("%s", "%s", "%s")"""
+  val withoutQuotesString = "T(%s, %s, %s)"
+  val withQuotesRe = """T\("(.*?)", "(.*?)", "(.*)"\)""".r
+  val withoutQuotesRe = """T\((.*?), (.*?), (.*)\)""".r
+
+  def importPredicate(string:String, score:Double = 1.0): Option[Predicate] = {
+    withoutQuotesRe.findFirstMatchIn(string) match {
+      case Some(x:Regex.Match) => {
+        val withoutQuotesRe(arg1:String, rel:String, arg2:String) = string
+        Some(Predicate(TupleHelper.fromLemmas(arg1, rel, arg2), score))
+      }
+      case None => None
+    }
+
+  }
   def exportPredicate(p:Predicate, score:Boolean = false, withQuotes:Boolean = false): String = {
 
     def prune(text:String) = TuffyUtils.toTuffyLiteral(text, withQuotes)
@@ -23,8 +39,8 @@ object TuffyFormatter{
 
     def exportTuple(tuple:Tuple): String = {
       val fmtString = withQuotes match {
-        case true => """T("%s", "%s", "%s")"""
-        case false => "T(%s, %s, %s)"
+        case true => withQuotesString
+        case false => withoutQuotesString
       }
       import TupleHelper._
       /**fmtString.format(prune(tuple.arg1.text),

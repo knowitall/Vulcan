@@ -17,6 +17,18 @@ import edu.knowitall.vulcan.common.Tuple
 
 object TupleHelper {
 
+
+  def fromResult(string: String) = {
+
+  }
+
+  def identical(a: Tuple, b: Tuple) = {
+    a.arg1.text.replaceAll("\"", " ").equalsIgnoreCase(b.arg1.text.replaceAll("\"", " ")) &&
+    a.rel.text.replaceAll("\"", " ").equalsIgnoreCase(b.rel.text.replaceAll("\"", " ")) &&
+    a.arg2s.map(_.text.replaceAll("\"", " ")).mkString(" ").equalsIgnoreCase(b.arg2s.map(_.text.replaceAll("\"", " ")).mkString(" "))
+  }
+
+
   def lemma(terms:Seq[Term]):String = terms.map(_.lemma.getOrElse("None")).mkString(" ")
 
 

@@ -59,7 +59,9 @@ object Axiom{
   def fromProposition(prop:Proposition) = new Axiom(prop.antecedents, prop.consequent, confidence = 1.0)
 
 }
-class Axiom(ant:Seq[Predicate], con:Predicate, confidence:Double) extends WeightedRule(ant, con, confidence)
+class Axiom(ant:Seq[Predicate], con:Predicate, confidence:Double) extends WeightedRule(ant, con, confidence){
+
+}
 
 
 
