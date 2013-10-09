@@ -23,10 +23,6 @@ import org.apache.solr.client.solrj.SolrQuery
 import org.slf4j.LoggerFactory
 
 /**
- * Given an input term (or terms), will query against a source solr instance
- * to retrieve relations featuring the input term.  It then extracts the source
- * sentences from those relations, passes those sentences through openie 4, and
- * loads the resulting extractions into the sink solr instance.
  */
 object SolrExtractor {
 
@@ -70,7 +66,9 @@ object SolrExtractor {
 
       val start = System.currentTimeMillis
 
-      val query = new SolrQuery("text:" + "\"" + term + "\"").setFields("text", "instances").setSortField("size", SolrQuery.ORDER.desc).setRows(batchSize)
+      val query = new SolrQuery("text:" + "\"" + term + "\"" + " AND size:[2 TO *]")
+                     .setFields("text", "instances")
+                     .setSort("size", SolrQuery.ORDER.desc).setRows(batchSize)
 
       var continue = true
       var count = 0
@@ -103,7 +101,7 @@ object SolrExtractor {
               //logger.info("Matched rel " + text + " to query " + term)
             }
             count += results.size()
-            if (count > 10000 || results.size() < batchSize) continue = false
+            if (count > 20000 || results.size() < batchSize) continue = false
             failures = 0
           }
 
@@ -111,6 +109,7 @@ object SolrExtractor {
 
             failures += 1
             if(failures > 10) {
+              logger.error("Exiting after too many failures: " + e, e)
               System.exit(1)
             }
 

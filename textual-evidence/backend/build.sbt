@@ -1,8 +1,3 @@
-import java.nio.file.Files
-import java.nio.file.Paths
-
-net.virtualvoid.sbt.graph.Plugin.graphSettings
-
 name := "vulcan-te-backend"
 
 organization := "edu.washington.cs.knowitall"
@@ -20,8 +15,9 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   // - openie-4.0 extraction
   //   These are it's dependencies
-  "edu.washington.cs.knowitall.openie" %% "openie-models" % "1.1-SNAPSHOT",
-  "edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.1-SNAPSHOT",
+  "edu.washington.cs.knowitall.openie" %% "openie-models" % "1.0",
+  "edu.washington.cs.knowitall.srlie" %% "srlie" % "gregj-SNAPSHOT",
+  //"edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.0-RC2",
   "edu.washington.cs.knowitall.chunkedextractor" %% "chunkedextractor" % "1.0.5",
   "edu.washington.cs.knowitall" %% "vulcan-common" % "0.3-SNAPSHOT",
   // for cli
@@ -31,9 +27,11 @@ libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.7.2",
   "org.slf4j" % "slf4j-simple" % "1.7.5",
   "commons-logging" % "commons-logging-api" % "1.0.4",
+  "commons-io" % "commons-io" % "2.4",
+  //
+  "edu.washington.cs.knowitall.common-scala" %% "common-scala" % "1.1.2",
   // 
   // headword dependendcies
-  "edu.washington.cs.knowitall.ollie" % "ollie-core_2.9.2" % "1.0.1",
   "edu.mit" % "jwi" % "2.2.3",
   "edu.washington.cs.knowitall.nlptools" %% "nlptools-core" % "2.3.0",
   "edu.washington.cs.knowitall.nlptools" %% "nlptools-stem-morpha" % "2.3.0",
@@ -44,7 +42,7 @@ libraryDependencies ++= Seq(
   "net.sf.extjwnl" % "extjwnl" % "1.5"
 ) 
 
-scalacOptions ++= Seq("-unchecked", "-deprecation")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 
 // custom options for high memory usage
 

@@ -1,51 +1,28 @@
 package edu.knowitall.vulcan.headwords
 
-import java.net.URL
-
 import edu.mit.jwi.Dictionary
-import edu.mit.jwi.item.{ POS, Pointer, ISynsetID, ISynset }
+import edu.mit.jwi.item.{POS, Pointer, ISynsetID, ISynset}
 import edu.mit.jwi.morph.WordnetStemmer
-import edu.mit.jwi.data.ILoadPolicy
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.HashSet
 
-import edu.washington.cs.knowitall.tool.postag.PostaggedToken
+import edu.knowitall.tool.postag.PostaggedToken
 
 /** This class holds a few methods that allow for easy access to the WordNet
  * database using the JWI library. 
  */
-class JwiTools {
+class JwiTools(dict: Dictionary) {
   
-  /** Dict is a JWI dictionary object. */
-  var dict: Dictionary = null
   /** Stemmer is a JWI WordnetStemmer object. */
-  var stemmer: WordnetStemmer = null
-  
-  def this(wnhome: String) {
-    this
-    setWNResources(wnhome)
-  }
-  
-  def setWNResources(wnhome: String) {
-    if (wnhome != "") {
-    dict = WNDictionary.fetchDictionary(wnhome)
-    } else {
-      dict = WNDictionary.fetchDictionary()
-    }
-    stemmer = new WordnetStemmer(dict)
-  
-  }
+  val stemmer = new WordnetStemmer(dict)
 
+  val nounSubjectBlacklist: Set[String] = HashSet("it", "he", "she", "they")
   
-  /** Takes a sequence of postagged tokens, determines the subject from the
-    * tokens, and returns a stream of the subject's nth sense from WordNet.
-    * If not found, returns a Stream containing an empty Set. 
-    * 
-    * @requires posTokens contains a subject that is in WordNet with an nth noun sense.
-    * @param posTokens a sequence of postagged tokens containing a noun phrase.
-    * @param n which sense of the subject to look up in WordNet.
-    * @return a stream of the subject's nth sense from WordNet. 
-    */
+  /**
+   * Finds the hypernyms for the nth sense of the term represented by the
+   * given sequence of PostaggedTokens
+   */
   def posTokensToHypernymStream(posTokens: Seq[PostaggedToken], n: Int): Stream[Set[ISynset]] = {
     
     /* Takes a sequence of POS-tagged tokens and finds the subject noun.
@@ -112,8 +89,13 @@ class JwiTools {
         } else {
           // look for stemmedWord in WordNet
           val idxWord = dict.getIndexWord(stemmedWord, POS.NOUN)
-          if (idxWord != null) stemmedWord
-          else {
+
+          if (idxWord != null && !nounSubjectBlacklist.contains(stemmedWord)) {
+
+            stemmedWord
+
+          } else {
+
             // word not found in WordNet. do the same check for "of"
             // described above
             if (toSearch.length > 1 && toSearch(1).postag == "IN") {
@@ -202,7 +184,7 @@ class JwiTools {
     * @param n which stem to return - set this to 0, rarely will you want others.
     * @return If word's nth WordNet stem exists, returns it; else empty string.
     */
-  def stem(word: String, n: Int): String = {
+  def stem(word: String, n: Int = 0): String = {
     val stems = stemmer.findStems(word, POS.NOUN).asScala
     return if (stems.length > n) stems(n) else "" 
   }

@@ -39,13 +39,20 @@ import edu.knowitall.vulcan.common.TermsArg
 import edu.knowitall.vulcan.common.serialization.TupleSerialization
 import edu.knowitall.vulcan.common.serialization.ExtractionSerialization
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.MutableList
 import scala.io.Source
 import scala.io.BufferedSource
 import scala.util.{Try, Success, Failure}
 
-import java.io.PrintStream
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.TrueFileFilter
+
+import java.io.PrintWriter
+import java.io.Writer
 import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 import java.text.SimpleDateFormat
@@ -56,19 +63,16 @@ import org.slf4j.LoggerFactory
  * Runs OpenIE-4-like extractor over input sentences, generating Extractions, and
  * dumping them as Json
  */
-class Extractor(corpus: String, batchId: String) {
+class Extractor(wordnetHome: String) {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
   private val idSeq = new AtomicInteger(0)
 
-  def nextId() : String = s"${corpus}_${batchId}_${idSeq.getAndIncrement()}"
-
   val parser = new ClearParser()
   val srl = new ClearSrl()
 
-  // TODO have to read wordnet home from a config
-  val headExtractor = new HeadExtractor("/home/gregj/scratch/wordnet3.0/")
+  val headExtractor = new HeadExtractor(wordnetHome)
 
   // confidence functions
   val srlieConf = SrlConfidenceFunction.loadDefaultClassifier()
@@ -82,9 +86,6 @@ class Extractor(corpus: String, batchId: String) {
   // subextractors
   val relnoun = new Relnoun
   val srlie = new SrlExtractor(srl)
-
-  var rootN: Int = 0
-  var nestedN: Int = 0
 
   def toTerm(token: Lemmatized[ChunkedToken]) : Term = {
     Term(token.string, Some(token.lemma), Some(token.postag), Some(token.chunk))
@@ -100,17 +101,49 @@ class Extractor(corpus: String, batchId: String) {
 
   def getRelHead[T <: PostaggedToken](tokens: Seq[Lemmatized[T]]) : Option[Seq[Term]] = {
     val unwrapped = tokens map { _.token }
-    headExtractor.relHead(unwrapped) match {
+    headExtractor.relationHead(unwrapped) match {
       case Some(tokens) => Some(tokens map { (tok) => Term(tok.string) })
       case None => None
     }
+  }
+
+  def extractFile(file: File,
+                  corpus: String, 
+                  batchId: String, 
+                  outputFile: File) : Unit = 
+  {
+    val input = Source.fromFile(file, "UTF-8")
+    val output = new PrintWriter(
+      new OutputStreamWriter(new FileOutputStream(outputFile, true), "UTF-8"))
+     
+    def nextId() : String = { 
+      s"${corpus}_${batchId}_${idSeq.getAndIncrement()}"
+    }
+
+    for(sentence <- input.getLines()) {
+      
+      try {
+        val extractions = extract(SentencePreprocessor(sentence), corpus, nextId)
+        extractions.foreach( extraction => 
+          output.println(ExtractionSerialization.toJson(extraction))
+        )
+      } catch {
+        case t: Throwable => logger.error("Extraction failed for " + sentence, t);
+      }
+    }
+
+    input.close()
+    output.close()
   }
 
   /**
    * Given a sentence, calls subextractors and returns their extractions
    * converted to common Extraction Tuples.
    */
-  def extract(sentence: String) : Seq[Extraction] = {
+  def extract(sentence: String, corpus: String, nextId: () => String) : Seq[Extraction] = {
+
+    // wrapper for a Seq[Interval] --- holdover from OpenIE
+    case class Part(text: String, offsets: Seq[Interval])
 
     // pre-process the sentence
     val chunked = chunker(sentence) map MorphaStemmer.lemmatizePostaggedToken
@@ -172,62 +205,6 @@ class Extractor(corpus: String, batchId: String) {
       relationForPart(relPart, negated, passive)
     }
       
-    def convertSrl(inst: SrlExtractionInstance): Extraction = {
-
-
-      //
-      // Build a Relation from the extraction
-      //
-      val rel = relForSrlRelation(inst.extr.rel, inst.extr.negated, inst.extr.passive)
-
-      //
-      // Build arg1 from the extraction
-      //
-      val arg1Part = new Part(inst.extr.arg1.text, 
-                              Seq(Interval.open(inst.extr.arg1.tokens.head.offsets.start,
-                                                inst.extr.arg1.tokens.last.offsets.end)))
-      val arg1 = argForPart(arg1Part) 
-
-      //
-      // Build arg2s from the extraction
-      //
-      val arg2sParts = inst.extr.arg2s.map(
-        arg2 => new Part(arg2.text, 
-                         Seq(Interval.open(arg2.tokens.head.offsets.start,
-                                           arg2.tokens.last.offsets.end))))
-
-      val arg2s = arg2sParts.size match {
-        case 0 => Seq[TermsArg]()
-        case 1 => Seq(argForPart(arg2sParts.head))
-        case n => argForPart(arg2sParts.head) +:
-                    arg2sParts.tail.map(part => argForPart(part, false))
-      }
-
-      // 
-      // build up context from the extraction
-      //
-      val context = inst.extr.context match {
-        case None => None
-        case Some(context) => {
-          val contextPart = new Part(context.text,
-                                     Seq(Interval.open(context.tokens.head.offsets.start,
-                                                       context.tokens.last.offsets.end)))
-          val contextToks = tokensForPart(contextPart)
-          val contextTerms = contextToks.map(toTerm)
-          Some(contextTerms)
-        }
-      }
-
-      val confidence = srlieConf(inst)
-
-      Extraction(Tuple(arg1, rel, arg2s, context),
-                 sentence, 
-                 sentenceDetails,
-                 confidence,
-                 nextId(),
-                 corpus) 
-    }
-
     def convertSrlNestedArg(arg: SrlNestedArgument) : Arg = {
       arg match {
         case Left(arg1: SrlArgument) => argForSrlArgument(arg1)
@@ -262,14 +239,12 @@ class Extractor(corpus: String, batchId: String) {
     }
 
     val srlExtrs: Seq[SrlExtractionInstance] = srlie(parsed)
-    rootN += srlExtrs.size
 
     val confidence = srlExtrs match {
       case Nil => None
       case inst :: _ => Some(srlieConf(inst)) // assumes all confidences are the same
     }
-    val srlNested: Seq[SrlNestedExtraction] = SrlNestedExtraction.from(srlExtrs.map { _.extr })
-    nestedN += srlNested.size
+    val srlNested = SrlNestedExtraction.from(srlExtrs.map { _.extr })
 
     val srls = srlNested.map(srl => 
                  Extraction(convertSrlNested(srl),
@@ -283,9 +258,18 @@ class Extractor(corpus: String, batchId: String) {
 
     val extrs = srls ++ (relnounExtrs map convertRelnoun)  
 
-    logger.info(s"extracted $rootN base and $nestedN total extractoins so far")
-
     extrs
+  }
+}
+
+/** 
+ * We want to do some preprocessing of sentences.
+ *
+ * Right now this just strips out parenthetical content.
+ */
+object SentencePreprocessor {
+  def apply(sentence: String) : String = {
+    sentence.replaceAll("\\([^)]*\\)", "")
   }
 }
 
@@ -297,22 +281,20 @@ object ExtractorMain {
 
   val logger = LoggerFactory.getLogger("ExtractorMain")
 
-  case class Config(val inputFile: Option[String] = None,
-                    val output: PrintStream = System.out,
+  case class Config(val inputFile: Option[File] = None,
+                    val outputFile: Option[File] = None,
                     val corpus: Option[String] = None,
-                    val batchId: Option[String] = None)
+                    val batchId: Option[String] = None,
+                    val wnHome: Option[String] = None)
   {
-    def getInputSource() : BufferedSource = inputFile match {
-      case Some(filename) => Source.fromFile(new File(filename), "ISO-8859-1")
-      case None => Source.stdin
-    }
-
-    def getCorpus() : String = corpus match {
-      case Some(string) => string
-      case None => inputFile match {
-        case Some(filename) => filename
-        case None => "stdin"
+    def getInputFiles() : Iterable[File] = inputFile match {
+      case Some(file) => {
+        val files = FileUtils.listFiles(file,
+                                        TrueFileFilter.INSTANCE, // all files
+                                        TrueFileFilter.INSTANCE) // in all subdirs
+        files.asScala
       }
+       case None => sys.error("unreachable")
     }
   }
 
@@ -321,11 +303,11 @@ object ExtractorMain {
     val parser = new scopt.immutable.OptionParser[Config]("ExtractorMain") {
 
       def options = Seq(
-        opt("input-file", "where to read input sentences, defaults to stdin") { 
-          (param, c) => c.copy(inputFile = Some(param))
+        opt("input-file", "[required] file or directory to read input sentences from, one per line") { 
+          (param, c) => c.copy(inputFile = Some(new File(param)))
         }, 
 
-        opt("corpus", "corpus to tag extractions as coming from, defaults to input-file") { 
+        opt("corpus", "corpus to tag extractions as coming from, defaults to output filename") { 
           (param, c) => c.copy(corpus = Some(param)) 
         }, 
 
@@ -333,13 +315,30 @@ object ExtractorMain {
           (param, c) => c.copy(batchId = Some(param)) 
         }, 
 
-        opt("output-file", "where to write output extractions, defaults to stdout") { 
-          (param, c) => c.copy(output = new PrintStream(new File(param)))
+        opt("output-file", "[required] file or directory to write output extractions to") { 
+          (param, c) => c.copy(outputFile = Some(new File(param)))
+        },
+
+        opt("wordnet-home", "[required] location of wordnet on the local filesystem") { 
+          (param, c) => c.copy(wnHome = Some(param))
         }
       )
     }
 
-    parser.parse(args, Config()) 
+    parser.parse(args, Config()) match {
+      case Some(config) => {
+        if(config.wnHome.isEmpty || 
+           config.inputFile.isEmpty || 
+           config.outputFile.isEmpty)
+        { 
+          parser.showUsage
+          None
+        } else {
+          Some(config)
+        }
+      }
+      case None => None
+    }
   }
 
   def main(args:Array[String]) {
@@ -349,32 +348,28 @@ object ExtractorMain {
       case None => return
     }
 
-    val corpus = config.getCorpus()
     val batchId = config.batchId.getOrElse(
       new SimpleDateFormat("yyyy-MM-dd-HH-mm").format(new Date()))
 
-    val extractor = new Extractor(corpus, batchId)
-    
-    var sentences = 0
-    var nExtractions = 0
+    val extractor = new Extractor(config.wnHome.get)
 
-    for(sentence <- config.getInputSource().getLines()) {
-      
-      sentences += 1
+    for(inputFile <- config.getInputFiles()) {
 
-      val extractions = extractor.extract(sentence)
+      val corpus = config.corpus.getOrElse(
+        inputFile.getName().replaceAll("\\.*\\.sentences$", ""))
 
-      extractions foreach ( extraction => {
-        nExtractions += 1
-        config.output.println(ExtractionSerialization.toJson(extraction))
-      })
-
+      val outputFile = 
+        if(config.outputFile.get.isDirectory()) {
+          new File(config.outputFile.get, inputFile.getName() + ".extractions")
+        } else {
+          config.outputFile.get
+        }
+      outputFile.getParentFile().mkdirs()
+          
+      extractor.extractFile(inputFile, 
+                            corpus,
+                            batchId, 
+                            outputFile);
     }
-
-    println("Processed " + sentences + " sentences")
-    println("Wrote " + nExtractions + " extractions")
   }
 }
-
-// wrapper for a Seq[Interval] --- holdover from OpenIE
-case class Part(text: String, offsets: Seq[Interval])
