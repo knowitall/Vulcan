@@ -40,6 +40,10 @@ libraryDependencies ++= Seq(
     //
     "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.2",
     //
+    //
+    //
+    //"edu.washington.cs.knowitall" %% "vulcan-te-backend" % "0.1-SNAPSHOT",
+    //
     //Netty, Jetty, unfiltered.
     //
     "net.databinder" %% "unfiltered-netty" % "0.6.8",
