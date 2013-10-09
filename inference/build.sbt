@@ -22,6 +22,10 @@ resolvers ++= Seq("scala-tools.org" at "http://scala-tools.org/repo-releases",
                   "Local Maven Repository" at "file://" + Path.userHome + "/.m2/repository"
                 )
 
+seq(com.github.retronym.SbtOneJar.oneJarSettings: _*)
+
+libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
+
 libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-library" % "2.10.2",
     // Vulcan Halo Core 
