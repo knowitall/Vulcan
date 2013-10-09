@@ -9,7 +9,6 @@ package edu.knowitall.vulcan.inference.proposition
  */
 
 import org.slf4j.LoggerFactory
-import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 import scala.io.Source
@@ -100,11 +99,16 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
   }
 }
 
-object Propostion{
+object Proposition{
   val trueThatRe = """Is it true that (.*?)?""".r
+
+  //val extractor = new Extractor("", "")
   def fromTrueThatQuestion(question:String) = {
     val trueThatRe(string:String) = question
-    string
+    val tuples = OpenIEWrapper.extract(string)
+    val tuple = tuples.maxBy(tuple => tuple.extraction.tripleString.split(" ").size)
+    val consequent = Predicate(TupleHelper.from(tuple.extraction.arg1.text, tuple.extraction.rel.text, tuple.extraction.arg2s.map(_.text).mkString(" ")), 1.0)
+    new Proposition(Seq[Predicate](), consequent)
   }
 }
 

@@ -74,7 +74,8 @@ object BidiSearchInferencer{
     val a1 = Axiom.fromTuple(TupleHelper.fromLemmas("metal", "be excellent conductor of", "electricity"), 1.0)
     val a2 = Axiom.fromTuple(TupleHelper.fromLemmas("iron", "type of", "metal"), 1.0)
     val a3 = Axiom.fromTuple(TupleHelper.fromLemmas("iron nail", "composed of", "iron"), 1.0)
-    inf.supportingAxiom(a1.consequent.tuple, a1::a2::a3::Nil, 0.5) match {
+    import InferenceUtils._
+    supportingAxiom(a1.consequent.tuple, a1::a2::a3::Nil, 0.5) match {
       case Some(axiom:Axiom) => logger.info("Axiom supporting: " + TuffyFormatter.exportRule(a1))
       case None => logger.info("Test axiom isnot supported")
     }
@@ -87,10 +88,10 @@ object BidiSearchInferencer{
     val basic = new TuffyInferencer(tuffy, config.tempDir)
     inf.marginal(proposition, evidence) match {
       case Some(results:InferenceResults) =>{
-        val axioms = inf.toAxioms(results)
+        val axioms = toAxioms(results)
         logger.info("Found %d new facts after full inference.".format(axioms.size))
         axioms.foreach(axiom => logger.info(TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes=true)))
-        inf.supportingAxiom(proposition, axioms, threshold=0.01) match {
+        supportingAxiom(proposition, axioms, threshold=0.01) match {
           case Some(axiom:Axiom) => logger.info("Proposition's marginal: " + TuffyFormatter.exportRule(axiom, withWeights=false, withQuotes=true))
           case None => logger.info("Proposition is not supported by inference.")
         }
@@ -102,18 +103,10 @@ object BidiSearchInferencer{
 
   }
 }
-class BidiSearchInferencer(entailment:EntailmentScorer,
-                           basic:Inferencer,
-                           threshold:Double) extends Inferencer{
-
-  val logger = LoggerFactory.getLogger(this.getClass)
-
+object InferenceUtils{
   def supportingAxiom(target:Tuple,
                       axioms:Iterable[Axiom],
                       threshold:Double): Option[Axiom] = {
-    logger.info("Target: " + target.text)
-    logger.info("Axioms: ")
-    axioms.foreach(axiom => logger.info("Axiom: " + TuffyFormatter.exportRule(axiom)))
     axioms.find(e => TupleHelper.identical(target, e.consequent.tuple))
   }
 
@@ -138,8 +131,17 @@ class BidiSearchInferencer(entailment:EntailmentScorer,
   }
 
 
+}
+class BidiSearchInferencer(entailment:EntailmentScorer,
+                           basic:Inferencer,
+                           threshold:Double) extends Inferencer{
+
+  val logger = LoggerFactory.getLogger(this.getClass)
+
+
   def marginal(t: Proposition, evidence: Evidence) = {
     def toInferenceResults(x:Axiom) = Some(new InferenceResults(((t.text -> x.confidence)::Nil).toMap, Seq[String]()))
+    import InferenceUtils._
     supportingAxiom(t, evidence, threshold) match {
       case Some(x:Axiom) => toInferenceResults(x)
       case None => {
@@ -197,6 +199,7 @@ class BidiSearchInferencer(entailment:EntailmentScorer,
       val pevidence = new Evidence(aprop, Seq(taxiom), invRules)
       basic.marginal(aprop, pevidence) match {
         case Some(results:InferenceResults) => {
+          import InferenceUtils._
           val plausibleAxioms = toAxioms(results)
           logger.info("Found %d plausible axioms".format(plausibleAxioms.size))
           plausibleAxioms.foreach(pax => logger.info("Plausible: " + TuffyFormatter.exportRule(pax)))

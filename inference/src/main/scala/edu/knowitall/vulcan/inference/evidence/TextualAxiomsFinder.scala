@@ -17,6 +17,7 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.kb.{WeightedRule, Axiom, Predicate}
 import org.slf4j.LoggerFactory
 import edu.knowitall.vulcan.inference.utils.TupleHelper
+import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyFormatter
 
 object TextualAxiomsFinder{
 
@@ -68,6 +69,10 @@ class TextualAxiomsFinder(endpoint:String, numTuples:Int) extends AxiomsFinder{
     import Axiom._
     resultsPage.results
       .sortBy(-_.score)
-      .map(result => fromPredicate(Predicate(result.extraction.tuple, result.score), result.score))
+      .map(result => {
+      val axiom = fromPredicate(Predicate(result.extraction.tuple, result.score), result.score)
+      logger.info("%s = %.2f".format(TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes = false), axiom.score()))
+      axiom
+    })
   }
 }

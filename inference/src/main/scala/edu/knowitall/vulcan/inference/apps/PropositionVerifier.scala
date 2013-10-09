@@ -41,11 +41,13 @@ class PropositionVerifier(finders:Seq[AxiomsFinder],
     TuffyFormatter.exportToDirectory(instance, tempDirectory)
 
   }
+
   def verify(proposition:Proposition) = {
     val evidence = findEvidence(proposition)
     exportEvidence(evidence)
     runTuffy()
   }
+
 
   def runTuffy() = tuffy.runTuffyNative(tempDirectory)
 }
