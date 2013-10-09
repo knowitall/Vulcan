@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   // - openie-4.0 extraction
   //   These are it's dependencies
   "edu.washington.cs.knowitall.openie" %% "openie-models" % "1.0",
-  "edu.washington.cs.knowitall.srlie" %% "srlie" % "gregj-SNAPSHOT",
+  "edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.1",
   //"edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.0-RC2",
   "edu.washington.cs.knowitall.chunkedextractor" %% "chunkedextractor" % "1.0.5",
   "edu.washington.cs.knowitall" %% "vulcan-common" % "0.3-SNAPSHOT",
