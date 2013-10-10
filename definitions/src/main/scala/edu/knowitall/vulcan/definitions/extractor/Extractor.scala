@@ -53,20 +53,25 @@ object Extractor{
 class Extractor(taggerPath:String){
 
 
-  val patternString = Source.fromFile(taggerPath).getLines.mkString("\n")
   //Create tagger collection from input pattern string
-  val t = TaggerCollection.fromString(patternString);
+  val patternString = Source.fromFile(taggerPath).getLines().mkString("\n")  
+  val t = TaggerCollection.fromString(patternString)
   val taggers = t.taggers
   val taggerDescriptors = taggers.map(_.name)
   //initialize chunker and stemmer to pass parameters to the tag method
   val chunker = new OpenNlpChunker
   val morpha = new MorphaStemmer
 
+  /**
+   * Extract tuples from definitions and write them out in a readable format.
+   * @param inputPath
+   * @param outputPath
+   */
   def extract(inputPath:String, outputPath:String) {
     //initialize output with header
     val pw = new PrintWriter(new File(outputPath))
     //Treat each line in input doc as a sentence
-    Source.fromFile(inputPath, "UTF-8").getLines.foreach(line => {
+    Source.fromFile(inputPath, "UTF-8").getLines().foreach(line => {
       pw.write(line.trim()+"\t")
       val tuples = extract(line)
       tuples.foreach(tuple => pw.write("\t(%s)".format(tuple.arg1.text + "," + tuple.rel.text + "," + tuple.arg2s.map(_.text).mkString(" "))))
@@ -75,19 +80,28 @@ class Extractor(taggerPath:String){
     pw.close()
   }
 
-
-  def extract(line: String) = {
-    val typeNamedGroupTypeMap = typeMap(line)
-    val extractions = new ArrayBuffer[Extraction]
+  /**
+   * Extract tuples from definition sentence.  
+   * @param sentence
+   * @return
+   */
+  def extract(sentence: String) = {
+    val typeNamedGroupTypeMap = typeMap(sentence)
     //turn map from parent types to children named group types into list of ordered extractions
-    taggerDescriptors.foreach(level => {
-      typeNamedGroupTypeMap.keySet.foreach(typ => {
+    val extractions = taggerDescriptors.flatMap(level => {
+      typeNamedGroupTypeMap.keySet.flatMap(typ => {
         if (typ.name.equals(level)) {
-          extractions.add(new Extraction(typ.name, typeNamedGroupTypeMap(typ).toList))
+          Some(new Extraction(typ.name, typeNamedGroupTypeMap(typ).toList))
+        }else{
+          None
         }
       })
     })
+    tuples(extractions)
+  }
 
+
+  def tuples(extractions: Iterable[Extraction]): Iterable[Tuple] = {
     val taidRe = """(.*?)_(.*)""".r
     val posTexts = extractions.flatMap(extr => {
       extr.extractionParts.flatMap(part => {
@@ -147,9 +161,7 @@ class Extractor(taggerPath:String){
 
   def linkedTypes(line: String): Seq[LinkedType] = {
     val chunkedSentence = chunker.chunk(line)
-
     val tokens = chunkedSentence.map(morpha.lemmatizeToken)
-
     //get all of the matching types from the sentence
     val types = t.tag(tokens)
     //iterate over taggers in order
