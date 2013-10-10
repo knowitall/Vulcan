@@ -17,6 +17,7 @@ import edu.knowitall.tool.chunk.OpenNlpChunker
 import edu.knowitall.tool.stem.MorphaStemmer
 import edu.knowitall.tool.typer.Type
 import scala.collection.mutable.ArrayBuffer
+import edu.knowitall.vulcan.common.Tuple
 
 
 /**
@@ -25,7 +26,7 @@ import scala.collection.mutable.ArrayBuffer
  * @author jgilme1
  *
  */
-class Extraction (patternName:String, extractionParts:List[LinkedType]){
+class Extraction (val patternName:String, val extractionParts:List[LinkedType]){
 
   override def toString():String = {
     val sb = new StringBuilder()
@@ -62,36 +63,57 @@ class Extractor(taggerPath:String){
   val morpha = new MorphaStemmer
 
   def extract(inputPath:String, outputPath:String) {
-    //get tagger names and store them in taggerDescriptors array
-
     //initialize output with header
     val pw = new PrintWriter(new File(outputPath))
-
-
-
     //Treat each line in input doc as a sentence
-    Source.fromFile(inputPath).getLines.foreach(line => {
-
+    Source.fromFile(inputPath, "UTF-8").getLines.foreach(line => {
       pw.write(line.trim()+"\t")
-
-      val typeNamedGroupTypeMap = typeMap(line)
-      val extractions = new ArrayBuffer[Extraction]
-      //turn map from parent types to children named group types into list of ordered extractions
-      taggerDescriptors.foreach(level => {
-        typeNamedGroupTypeMap.keySet.foreach(typ => {
-          if(typ.name.equals(level)){
-            extractions.add(new Extraction(typ.name,typeNamedGroupTypeMap(typ).toList))
-          }
-        })
-      })
-
-      //print extractions tab separated in line
-      extractions.foreach(extr => pw.write("\t"+extr.toString()))
+      val tuples = extract(line)
+      tuples.foreach(tuple => pw.write("\t(%s)".format(tuple.arg1.text + "," + tuple.rel.text + "," + tuple.arg2s.map(_.text).mkString(" "))))
       pw.write("\n")
     })
     pw.close()
   }
 
+
+  def extract(line: String) = {
+    val typeNamedGroupTypeMap = typeMap(line)
+    val extractions = new ArrayBuffer[Extraction]
+    //turn map from parent types to children named group types into list of ordered extractions
+    taggerDescriptors.foreach(level => {
+      typeNamedGroupTypeMap.keySet.foreach(typ => {
+        if (typ.name.equals(level)) {
+          extractions.add(new Extraction(typ.name, typeNamedGroupTypeMap(typ).toList))
+        }
+      })
+    })
+
+    val taidRe = """(.*?)_(.*)""".r
+    val posTexts = extractions.flatMap(extr => {
+      extr.extractionParts.flatMap(part => {
+        val tupleargids = part.name.replaceAll(extr.patternName + """.""", "").split("and")
+        tupleargids.map(taid => {
+          val taidRe(tid: String, position: String) = taid
+          (tid, position, part.text)
+        })
+      })
+    })
+    posTexts.groupBy(_._1).map(grp => {
+      var rel = if (grp._1.equals("T1")) "ISA" else "is"
+      var arg1 = ""
+      var arg2s = Seq[String]()
+      grp._2.foreach(x => {
+        x._2 match {
+          case "1" => arg1 = x._3
+          case "2" => rel = x._3
+          case "3" => arg2s :+= x._3
+          case "3a" => arg2s :+= x._3
+          case "3b" => arg2s :+= x._3
+        }
+      })
+      Tuple.makeTuple(arg1, rel, arg2s.mkString(" "))
+    })
+  }
 
   def typeMap(line: String) = {
     //initialize map for Type to linked children types
