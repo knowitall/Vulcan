@@ -20,6 +20,7 @@ import edu.knowitall.openie.Instance
 import scala.Some
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
 import edu.knowitall.vulcan.inference.utils.TupleHelper
+import edu.knowitall.vulcan.extraction.Extractor
 
 
 object QuestionIO{
@@ -102,12 +103,15 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
 object Proposition{
   val trueThatRe = """Is it true that (.*?)?""".r
 
+  val extractor = new Extractor("definitions")
   //val extractor = new Extractor("", "")
   def fromTrueThatQuestion(question:String) = {
     val trueThatRe(string:String) = question
-    val tuples = OpenIEWrapper.extract(string)
-    val tuple = tuples.maxBy(tuple => tuple.extraction.tripleString.split(" ").size)
-    val consequent = Predicate(TupleHelper.from(tuple.extraction.arg1.text, tuple.extraction.rel.text, tuple.extraction.arg2s.map(_.text).mkString(" ")), 1.0)
+    val extractions = extractor.extract(string, "definition", () => "question")//OpenIEWrapper.extract(string)
+    val bestExtr = extractions.maxBy(extr => extr.tuple.text.split(" ").size)
+    val tuple = bestExtr.tuple
+    val confidence = bestExtr.confidence
+    val consequent = Predicate(tuple, confidence)
     new Proposition(Seq[Predicate](), consequent)
   }
 }
