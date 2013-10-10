@@ -1,0 +1,88 @@
+N := PatternTagger{
+  // you can use comments too but only inside a Tagger definition
+  <pos='NN'> | <pos='NNP'> | <pos='NNS'> | <pos='NNPS'> | <pos='PRP'> | <pos='CD'>
+}
+V := PatternTagger{
+  <pos='VB'> | <pos='VBZ'> | <pos='VBG'> | <pos='VBD'> | <pos='VBN'>
+}
+A := PatternTagger{
+  <pos='JJ'> | <pos='JJR'> | <pos='JJS'> | <pos='PRP$'> | <pos='POS'> | <pos='-'>
+}
+That := PatternTagger{
+  <string=/(?i)that/> | <string=/(?i)which/> | <string=/(?i)who/> | <string=/(?i)whom/> 
+}
+If := PatternTagger{
+ // (?i) indicates case-insensitive
+ <string=/(?i)if/> |<string=/(?i)when/> | <string=/(?i)whenever/> | <string=/(?i)while/> | <string=/(?i)whether/> | <string=/(?i)although/> | <string=/(?i)though/> | <string=/(?i)because/> | <string=/(?i)while/> | <string=/(?i)unless/> 
+}
+sNP := PatternTagger{
+  (?:<pos='DT'>)? (?:<type='A'> | <type='N'>)+  (?:<string=/(?i)of/> (?:<pos='DT'>)? (?:<type='A'> | <type='N'>)* )*<type='N'>
+  (?:<pos='DT'>)? (?:<type='A'> | <type='N'>)* <type='N'> 
+  (?:<pos='DT'>)? (?:<type='A'>  (?:<string=','>|<pos='CC'>) <type='A'>)* <type='N'> 
+  (?:<pos='DT'>)? (?:<type='A'> | <type='N'>)* <type='N'>  
+  <pos='DT'> <pos='VBG'>+ (?:<pos='rb'>)?
+  (?:<pos='DT'>)? <pos='VBG'>+ (?:<pos='rb'>)? (?:<type='A'>|<type='N'>)* <type='N'> 
+}
+sVP := TypePatternTagger{
+( (?:<pos='MD'>|<pos='RB'>)* @V (?:<type='V'>|<pos='MD'>|<pos='RB'>|<pos='TO'>)* )
+}
+Prep := PatternTagger{
+( (?:<pos='IN' & !type='That' & !type='If' & !string='of'> |<pos='TO'>|<pos='RP'>)+ (?:<pos='CC'> (?:<pos='IN' & !type='That' & !type='If' & !string='of'>|<pos='TO'>|<pos='RP'>)+)* ) 
+}
+NPp := TypePatternTagger{
+ @sNP (?:@Prep @sNP (?: (?: (?:<string=','>|<string=','>? <pos='CC'>) @sNP)* <string=','>? <pos='CC'> @sNP)* )*
+}
+VPp := TypePatternTagger{
+( @sVP (?:<type='Prep'>|<string='of'>)* )
+}
+VP := TypePatternTagger{
+( @VPp (?: (?: (?:<string=','>|<string=','>? <pos='CC'>) @VPp)* <string=','>? <pos='CC'> @VPp)* )
+}
+NP := TypePatternTagger{
+( @NPp (?: (?: (?:<string=','>|<string=','>? <pos='CC'>) @NPp)* <string=','>? <pos='CC'> @NPp)* )
+}
+NP1 := TypePatternTagger{
+// allows definition to have domain (e.g. botany) after "is"
+( @sNP @sNP )
+( <string='in'> @sNP (?:<string=','>)? @sNP)
+( <pos='rb'> (?:<string=','>)? @sNP)
+}
+NP2 := TypePatternTagger{
+( @sNP @NP )
+( <string='in'> @sNP (?:<string=','>)? @NP)
+( <pos='rb'> (?:<string=','>)? @NP)
+}
+
+Pattern01 := TypePatternTagger{
+(<T1_1>:@NP) <string='is'> (<T1_3>:@sNP) (?:<pos='.'>|<pos=';'>)
+(<T1_1>:@NP) <string='is'> (<T1_3>:@NP1) (?:<pos='.'>|<pos=';'>)
+
+}
+Pattern02 := TypePatternTagger{
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP) (?:@That)? (<T2_2>:@VP) (<T2_3>:@NP)  (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP2) (?:@That)? (<T2_2>:@VP) (<T2_3>:@NP)  (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP) (?:@That)? (<T2_2>:@VP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP2) (?:@That)? (<T2_2>:@VP) (?:<pos='.'>|<pos=';'>)
+}
+Pattern02a := TypePatternTagger{
+(<T1_1andT2_1andT3_1>:@NP) <string='is'> (<T1_3>:@NP) (?:@That)?  (<T2_2>:@VP) (<T2_3>:@NP) <string=','>? (<string='and'>|<string='but'>) (<T3_2>:@VP) (<T3_3>:@NP)   (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1andT3_1>:@NP) <string='is'> (<T1_3>:@NP2) (?:@That)?  (<T2_2>:@VP) (<T2_3>:@NP) <string=','>? (<string='and'>|<string='but'>) (<T3_2>:@VP) (<T3_3>:@NP)   (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1andT3_1>:@NP) <string='is'> (<T1_3>:@NP) (?:@That)?  (<T2_2>:@VP) (<T2_3>:@NP) <string=','>? (<string='and'>|<string='but'>) (<T3_2>:@VP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1andT3_1>:@NP) <string='is'> (<T1_3>:@NP2) (?:@That)?  (<T2_2>:@VP) (<T2_3>:@NP) <string=','>? (<string='and'>|<string='but'>) (<T3_2>:@VP) (?:<pos='.'>|<pos=';'>)
+}
+Pattern02b := TypePatternTagger{
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP) (?:@That)?  (<T2_2>:@VP) (<T23_1>:@NP) (<T23_2>:@VP) (<T23_3>:@NP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP2) (?:@That)?  (<T2_2>:@VP) (<T23_1>:@NP) (<T23_2>:@VP) (<T23_3>:@NP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP) (?:@That)?  (<T2_2>:@VP) (<T23_1>:@NP) (<T23_2>:@VP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP2) (?:@That)?  (<T2_2>:@VP) (<T23_1>:@NP) (<T23_2>:@VP) (?:<pos='.'>|<pos=';'>)
+}
+Pattern02c := TypePatternTagger{
+(<T1_1andT2_3>:@NP) <string='is'> (<T1_3>:@NP) (?:@That)?   (<T2_1>:@NP)  (<T2_2>:@VP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_3>:@NP) <string='is'> (<T1_3>:@NP2) (?:@That)?   (<T2_1>:@NP)  (<T2_2>:@VP) (?:<pos='.'>|<pos=';'>)
+}
+Pattern03 := TypePatternTagger{
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@sNP) (<T2_3a>:@Prep)(<T2_3b>:@sNP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP1) (<T2_3a>:@Prep)(<T2_3b>:@sNP) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@sNP) (<T2_3a>:@Prep)(<T2_3b>:@sNP (?:@Prep @sNP)+) (?:<pos='.'>|<pos=';'>)
+(<T1_1andT2_1>:@NP) <string='is'> (<T1_3>:@NP1) (<T2_3a>:@Prep)(<T2_3b>:@sNP (?:@Prep @sNP)+) (?:<pos='.'>|<pos=';'>)
+}
