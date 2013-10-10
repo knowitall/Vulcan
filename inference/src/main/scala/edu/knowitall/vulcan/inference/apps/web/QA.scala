@@ -79,10 +79,6 @@ object QA {
     tupleSolver = new TupleMatchTrueFalseSolver(taf)
   }
 
-
-
-
-
   def wrapXML(string:String)  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" + string
   val intentVal = unfiltered.netty.cycle.Planify {
     case req @ GET(Path("/tfsolver")) =>{
@@ -92,8 +88,23 @@ object QA {
           qa.marshall(xml) match {
             case Some(parse:QuestionParse) => {
               val answer = tupleSolver.solve(parse)
-              //ResponseString(qa.toXml(parse))
               ResponseString(qa.toXml(answer))
+            }
+            case None => ResponseString("Failed to parse input xml: " + xml)
+          }
+        }
+        case None => ResponseString(wrapHtml(form("").toString()))
+      }
+    }
+    case req @ GET(Path("/mlnsolver")) =>{
+      import ReqHelper._
+      getValue(req, "parse") match {
+        case Some(xml:String) => {
+          qa.marshall(xml) match {
+            case Some(parse:QuestionParse) => {
+              val answer = mlnSolver.solve(parse)
+              ResponseString(qa.toXml(answer))
+              //ResponseString("MLN Solver not supported.")
             }
             case None => ResponseString("Failed to parse input xml: " + xml)
           }
