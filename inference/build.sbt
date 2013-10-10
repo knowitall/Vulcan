@@ -46,7 +46,7 @@ libraryDependencies ++= Seq(
     //
     //
     //
-    //"edu.washington.cs.knowitall" %% "vulcan-te-backend" % "0.1-SNAPSHOT",
+    "edu.washington.cs.knowitall" %% "vulcan-te-backend" % "0.1-SNAPSHOT",
     //
     //Netty, Jetty, unfiltered.
     //
