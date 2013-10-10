@@ -18,6 +18,7 @@ import edu.knowitall.vulcan.inference.kb.{WeightedRule, Axiom, Predicate}
 import org.slf4j.LoggerFactory
 import edu.knowitall.vulcan.inference.utils.TupleHelper
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyFormatter
+import scala.collection.immutable.HashMap
 
 object TextualAxiomsFinder{
 
@@ -31,7 +32,8 @@ object TextualAxiomsFinder{
   }
 }
 
-class TextualAxiomsFinder(endpoint:String, numTuples:Int) extends AxiomsFinder{
+class TextualAxiomsFinder(endpoint:String,
+                          numTuples:Int) extends AxiomsFinder{
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -50,14 +52,25 @@ class TextualAxiomsFinder(endpoint:String, numTuples:Int) extends AxiomsFinder{
 
   }
 
+  def distinct(axioms:Seq[Axiom]) = {
+    var map = new HashMap[String, Axiom]
+    axioms.foreach(x => {
+      val key = x.consequent.tuple.text
+      println("Considering key: " + key)
+      if(!map.contains(key)){
+        map += key -> x
+      }else{
+        println("Ignoring: " + key)
+      }
+    })
+    map.values.toSeq.sortBy(-_.score)
+  }
+
   def find(proposition:Proposition) = {
     //val queries = fieldQueries(proposition.consequent.tuple).map(QueryBuilder.and(TupleQuery.partialMatchQuery()))
     val propTuple = proposition.consequent.tuple
     val variants = TupleHelper.wildcardVaiants(propTuple)
-    find(propTuple) ++ variants.flatMap(variant => find(variant))
-    //Axiom.fromTuple(Tuple.makeTuple("metal", "conductor of", "electricity"))::Nil ++
-    //predicates.map(new Axiom(Seq[Predicate](), _, 1.0))
-
+    distinct(find(propTuple) ++ variants.flatMap(variant => find(variant)))
   }
 
 
@@ -65,7 +78,6 @@ class TextualAxiomsFinder(endpoint:String, numTuples:Int) extends AxiomsFinder{
     val query = QueryBuilder.and(TupleQuery.matchAnyQuery(propTuple), corpusQuery)
     logger.info("Query: " + query)
     val resultsPage = client.query(query, start = 0, rows = numTuples)
-
     import Axiom._
     resultsPage.results
       .sortBy(-_.score)
