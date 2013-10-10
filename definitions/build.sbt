@@ -22,7 +22,8 @@ resolvers += "Sonatype SNAPSHOTS" at "https://oss.sonatype.org/content/repositor
 resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
-    "edu.washington.cs.knowitall.taggers" %% "taggers-core" % "0.3"
+    "edu.washington.cs.knowitall.taggers" %% "taggers-core" % "0.3",
+    "edu.washington.cs.knowitall" %% "vulcan-common" % "0.2-SNAPSHOT"
 )
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
