@@ -1,44 +1,24 @@
 package edu.knowitall.vulcan.extraction
 
+import edu.knowitall.tool.sentence.OpenNlpSentencer
+
 import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 import java.io.PrintWriter
 
-import scala.io.Source
+import java.nio.file.Path
+import java.nio.file.Files
+
 import scala.collection.JavaConverters._
 
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.filefilter.TrueFileFilter
+import scala.io.Source
 
 import scopt.immutable.OptionParser
 
-import edu.knowitall.common.Resource
-import edu.knowitall.tool.sentence.OpenNlpSentencer
+class SentenceSplitter {
 
-object SentenceSplitter extends App {
-
-  case class Config(
-    inputFile: File = null,
-    outputFile: File = null)
-
-  val parser = new OptionParser[Config]("sentence-splitter") {
-    def options = Seq(
-      argOpt("input-file", "[required] input file or directory") { (string, config) =>
-        val file = new File(string)
-        require(file.exists, "input file does not exist: " + file)
-        config.copy(inputFile = file)
-      },
-      argOpt("output-file", "[required] output file or directory") { (string, config) =>
-        val file = new File(string)
-        config.copy(outputFile = file)
-      })
-  }
-
-  parser.parse(args, Config()) match {
-    case Some(config) => 
-      if(config.inputFile == null || config.outputFile == null) parser.showUsage
-      else run(config)
-    case None =>
-  }
+  val sentencer = new OpenNlpSentencer()
 
   def sentenceFilter(sentence: String) = {
     val terminatingCharacters = Set('.', '?', '!')
@@ -49,51 +29,119 @@ object SentenceSplitter extends App {
     sentence.trim.replaceAll("\t", " ")
   }
 
-  def run(config: Config) {
+  def sentenceFile(inputFile: Path, outputFile: Path) = {
 
-    val sentencer = new OpenNlpSentencer()
+    val input = Source.fromFile(inputFile.toFile, "UTF-8")
+    val outPart = outputFile.resolveSibling(outputFile.getFileName().toString() + ".part")
+    val output = new PrintWriter(
+      new OutputStreamWriter(new FileOutputStream(outPart.toFile(), false), "UTF-8"))
 
-    val inputFiles = FileUtils.listFiles(config.inputFile, 
-                                         TrueFileFilter.INSTANCE, // match all files
-                                         TrueFileFilter.INSTANCE) // recursively in all subdirs
+    val lines = input.getLines.buffered
+    while (lines.hasNext) {
+      var segment: Vector[String] = Vector.empty
+      while (lines.hasNext && !lines.head.trim.isEmpty) {
+        segment = segment :+ lines.next
+      }
 
-    for (inputFile <- inputFiles.asScala) {
+      // skip over whitespace line
+      if (lines.hasNext) lines.next
 
-      println("Processing: " + inputFile)
+      val sentences = sentencer(segment.mkString(" "))
+      sentences.iterator.map(_.text).map(sentenceMap).filter(sentenceFilter) foreach output.println
+    }
 
-      val subdirectory = inputFile.getParentFile.getPath.drop(config.inputFile.getPath.size)
-      val outputDir = new File(config.outputFile, subdirectory)
-      outputDir.mkdirs()
+    input.close()
+    output.close()
 
-      val outputFileName = inputFile.getName() + ".sentences"
-      val outputFile = new File(outputDir, outputFileName)
+    Files.move(outPart, outputFile)
+  }
+}
 
-      if (!outputFile.exists()) {
-        Resource.using(Source.fromFile(inputFile, "UTF-8")) { source =>
-          val lines = source.getLines.buffered
-          Resource.using(new PrintWriter(outputFile, "UTF-8")) { writer =>
-            while (lines.hasNext) {
-              var segment: Vector[String] = Vector.empty
-              while (lines.hasNext && !lines.head.trim.isEmpty) {
-                segment = segment :+ lines.next
-              }
+class FileSentenceSplitter(inputDir: Path,
+                           outputDir: Path,
+                           errorDir: Path,
+                           doneDir: Option[Path],
+                           inputSuffix: Option[String],
+                           outputSuffix: Option[String])
+  extends FileProcessor(inputDir, outputDir, errorDir, doneDir, inputSuffix, outputSuffix)
+{
+  val sentencer = new SentenceSplitter()
 
-              // skip over whitespace line
-              if (lines.hasNext) lines.next
+  def processFile(inputFile: Path, outputFile: Path) = {
+    sentencer.sentenceFile(inputFile, outputFile)
+  }
+}
 
-              val sentences = sentencer(segment.mkString(" "))
-              sentences.iterator.map(_.text).map(sentenceMap).filter(sentenceFilter) foreach writer.println
-            }
+object FileSentenceSplitterMain {
 
-            println("Written to: " + outputFile)
-          }
+  val OUTPUT_SUFFIX = ".sentences.txt"
+
+  case class Config(val inputDir: Path = null,
+                    val outputDir: Path = null,
+                    val errorDir: Path = null,
+                    val doneDir: Option[Path] = None,
+                    val daemon: Boolean = false)
+
+  def parseArgs(args: Array[String]) : Option[Config] = {
+
+    val parser = new OptionParser[Config]("ExtractorDaemon") {
+
+      def options = Seq(
+        opt("input-dir", "[required] directory to read input files from") { 
+          (param, c) => c.copy(inputDir = new File(param).getCanonicalFile.toPath)
+        }, 
+
+        opt("output-dir", "[required] directory to write output sentences to") { 
+          (param, c) => c.copy(outputDir = new File(param).getCanonicalFile.toPath)
+        },
+
+        opt("error-dir", "[required] directory to move files which failed processing to") { 
+          (param, c) => c.copy(errorDir = new File(param).getCanonicalFile.toPath)
+        },
+
+        opt("done-dir", "[optional] directory to move processed input files to, otherwise deleted") {
+          (param, c) => c.copy(doneDir = Some(new File(param).getCanonicalFile.toPath))
+        },
+
+        booleanOpt("daemon", "[optional] run as a daemon, continuously polling input-dir") { 
+          (param, c) => c.copy(daemon = param)
+        }
+      )
+    }
+
+    parser.parse(args, Config()) match {
+      case Some(config) => {
+        if(config.inputDir == null || !config.inputDir.toFile.isDirectory() ||
+           config.outputDir == null || !config.outputDir.toFile.isDirectory() ||
+           config.errorDir == null || !config.errorDir.toFile.isDirectory())
+        { 
+          parser.showUsage
+          None
+        } else {
+          Some(config)
         }
       }
-      else {
-        println("Skipping because output file exists: " + inputFile)
-      }
+      case None => None
+    }
+  }
 
-      println()
+  def main(args: Array[String]) : Unit = {
+
+    val config = parseArgs(args) match {
+      case Some(c) => c
+      case None => return
+    }
+
+    val sentenceSplitter = new FileSentenceSplitter(config.inputDir,
+                                                    config.outputDir,
+                                                    config.errorDir,
+                                                    config.doneDir,
+                                                    None, // don't filter input
+                                                    Some(OUTPUT_SUFFIX))
+    if(config.daemon) {
+      sentenceSplitter.runDaemon()
+    } else {
+      sentenceSplitter.processFiles()
     }
   }
 }

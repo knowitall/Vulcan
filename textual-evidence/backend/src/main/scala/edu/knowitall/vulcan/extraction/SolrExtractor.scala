@@ -10,8 +10,6 @@ import java.util.{List => JList}
 
 import scopt.immutable.OptionParser
 
-//import edu.knowitall.vulcan.openie.{Instance => OpenIE4Instance}
-
 import edu.knowitall.openie.models.Instance
 import edu.knowitall.openie.models.ReVerbExtraction
 

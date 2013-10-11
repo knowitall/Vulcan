@@ -47,7 +47,6 @@ class SolrLoader(urlString: String,
   val logger = LoggerFactory.getLogger(this.getClass)
 
   val solr = new ConcurrentUpdateSolrServer(urlString, batchSize, threads)
-             //new HttpSolrServer(urlString)
 
   def toSolrDocument(extraction: Extraction) = {
 

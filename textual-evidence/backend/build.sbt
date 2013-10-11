@@ -7,17 +7,16 @@ version := "0.1-SNAPSHOT"
 scalaVersion := "2.10.2"
 
 resolvers ++= Seq(
+  "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
   "Sonatype SNAPSHOTS" at "https://oss.sonatype.org/content/repositories/snapshots/",
-  "Trusty Snapshots" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/snapshots",
-  "Trusty Releases" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/releases"
+  "Trusty Releases" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/releases",
+  "Trusty Snapshots" at "http://trusty.cs.washington.edu:8082/nexus/content/repositories/snapshots"
 )
 
 libraryDependencies ++= Seq(
-  // - openie-4.0 extraction
-  //   These are it's dependencies
+  // openie extraction dependencies
   "edu.washington.cs.knowitall.openie" %% "openie-models" % "1.1-SNAPSHOT",
   "edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.1",
-  //"edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.0-RC2",
   "edu.washington.cs.knowitall.chunkedextractor" %% "chunkedextractor" % "1.0.5",
   "edu.washington.cs.knowitall" %% "vulcan-common" % "0.3-SNAPSHOT",
   // for cli
@@ -30,16 +29,10 @@ libraryDependencies ++= Seq(
   "commons-io" % "commons-io" % "2.4",
   //
   "edu.washington.cs.knowitall.common-scala" %% "common-scala" % "1.1.2",
-  // 
   // headword dependendcies
-  "edu.mit" % "jwi" % "2.2.3",
-  "edu.washington.cs.knowitall.nlptools" %% "nlptools-core" % "2.3.0",
-  "edu.washington.cs.knowitall.nlptools" %% "nlptools-stem-morpha" % "2.3.0",
-  "edu.washington.cs.knowitall.nlptools" %% "nlptools-sentence-opennlp" % "2.4.2",
-  "edu.washington.cs.knowitall.nlptools" %% "nlptools-typer-stanford" % "2.4.2",
-  "edu.washington.cs.knowitall" % "opennlp-sent-models" % "1.5",
-  "commons-io" % "commons-io" % "2.0.1" ,
-  "net.sf.extjwnl" % "extjwnl" % "1.5"
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-headword-uw" % "2.4.4-SNAPSHOT",
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-core" % "2.4.4-SNAPSHOT",
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-sentence-opennlp" % "2.4.3"
 ) 
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
