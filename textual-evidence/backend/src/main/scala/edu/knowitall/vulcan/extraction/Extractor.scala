@@ -13,6 +13,7 @@ import edu.knowitall.tool.tokenize.ClearTokenizer
 import edu.knowitall.tool.chunk.OpenNlpChunker
 import edu.knowitall.tool.postag.OpenNlpPostagger
 import edu.knowitall.tool.parse.ClearParser
+import edu.knowitall.tool.parse.RemoteDependencyParser
 
 import edu.knowitall.chunkedextractor.Relnoun
 
@@ -65,14 +66,22 @@ import org.slf4j.LoggerFactory
  * Runs OpenIE-4-like extractor over input sentences, generating Extractions, and
  * dumping them as Json
  */
-class Extractor(wordnetHome: String) {
+class Extractor(wordnetHome: String, parserServer:Option[String]=None, srlServer:Option[String]=None) {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
   private val idSeq = new AtomicInteger(0)
 
-  val parser = new ClearParser()
-  val srl = new ClearSrl()
+  //Create a new parser if a server isn't specified.
+  val parser = parserServer match {
+    case Some(url:String) => new RemoteDependencyParser(url)
+    case None => new ClearParser()
+  }
+  //Create a new Srl instance if a server isn't specified.
+  val srl = srlServer match {
+    case Some(url:String) => new RemoteSrl(url)
+    case None => new ClearSrl()
+  }
 
   val headExtractor = new UWHeadExtractor(wordnetHome)
 
@@ -310,7 +319,9 @@ object FileExtractorMain {
                     val errorDir: Path = null,
                     val doneDir: Option[Path] = None,
                     val wnHome: String = null,
-                    val daemon: Boolean = false)
+                    val daemon: Boolean = false,
+                    val parserUrl: Option[String] = None,
+                    val srlUrl: Option[String] = None)
 
   def parseArgs(args: Array[String]) : Option[Config] = {
 
@@ -339,6 +350,14 @@ object FileExtractorMain {
 
         booleanOpt("daemon", "[optional] run as a daemon, continuously polling input-dir") { 
           (param, c) => c.copy(daemon = param)
+        },
+
+        opt("parser-url", "Clear dependency parser server url.") {
+          (param, c) => c.copy(parserUrl = Some(param))
+        },
+
+        opt("srl-url", "Clear srl parser server url.") {
+          (param, c) => c.copy(srlUrl = Some(param))
         }
       )
     }
