@@ -20,6 +20,8 @@ import edu.knowitall.vulcan.inference.algorithms.InferenceUtils
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.{TuffyFormatter, InferenceResults}
 import edu.knowitall.vulcan.inference.kb.Axiom
 import edu.knowitall.vulcan.inference.evidence.TextualAxiomsFinder
+import edu.knowitall.vulcan.inference.openie.OpenIEWrapper
+import edu.knowitall.vulcan.extraction.Extractor
 
 
 trait Solver {
@@ -76,18 +78,18 @@ abstract class TrueFalseSolver extends Solver{
 
 }
 
-class TupleMatchTrueFalseSolver(taf:TextualAxiomsFinder) extends TrueFalseSolver {
+class TupleMatchTrueFalseSolver(taf:TextualAxiomsFinder, extractor:Extractor) extends TrueFalseSolver {
 
   def findSupports(question: String, topn:Int=5) = {
-    val proposition = Proposition.fromTrueThatQuestion(question)
+    val proposition = Proposition.fromTrueThatQuestion(question, extractor)
     taf.find(proposition).take(topn).map(axiom => support(axiom))
 
   }
 }
 
-class MLNTrueFalseSolver(verifier:PropositionVerifier) extends TrueFalseSolver {
+class MLNTrueFalseSolver(verifier:PropositionVerifier, extractor:Extractor) extends TrueFalseSolver {
   def findSupports(question:String, topn:Int = 10) = {
-    val proposition = Proposition.fromTrueThatQuestion(question)
+    val proposition = Proposition.fromTrueThatQuestion(question,extractor)
     verifier.verify(proposition) match {
       case Some(results:InferenceResults) => {
         InferenceUtils.toAxioms(results).map(support(_))

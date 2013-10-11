@@ -21,6 +21,7 @@ import scala.Some
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
 import edu.knowitall.vulcan.inference.utils.TupleHelper
 import edu.knowitall.vulcan.extraction.Extractor
+import edu.knowitall.vulcan.common.Extraction
 
 
 object QuestionIO{
@@ -31,7 +32,7 @@ object QuestionIO{
 
   val keys = Set[String]("(A)", "(B)", "(C)", "(D)")
 
-  def fromLine(line:String) = {
+  def fromLine(line:String, extractor:Extractor) = {
     import OpenIEWrapper._
     val splits = line.split("\t")
     val qid = splits(0)
@@ -44,8 +45,8 @@ object QuestionIO{
         val r = propositionText(x)
         var simplifiedText: String = r._1
         val text: String = r._2
-        val tuples = openie.extract(text)
-        val simplified = openie.extract(simplifiedText)
+        val tuples = extractor.extract(text, "question", () => qid)
+        val simplified = extractor.extract(simplifiedText, "simplified-question", () => qid)
         Some(new Assertion(x, tuples, simplified))
       }else{
         None
@@ -68,7 +69,7 @@ object QuestionIO{
     (simplifiedText, text)
   }
 
-  def fromFile(file:File)  = Source.fromFile(file).getLines().flatMap(fromLine(_))
+  def fromFile(file:File, extractor:Extractor)  = Source.fromFile(file).getLines().flatMap(fromLine(_, extractor))
 }
 
   case class Question(qdid:String,
@@ -83,7 +84,7 @@ object QuestionIO{
                     question:String,
                     assertions:ArrayBuffer[Assertion])
 
-  case class Assertion(raw:String, tuples:Seq[Instance], simplified:Seq[Instance]) {
+  case class Assertion(raw:String, tuples:Seq[Extraction], simplified:Seq[Extraction]) {
     def serialize() = raw + "\t" + tuples.map("<tuple>" + _.toString  + "</tuple>").mkString("")
   }
 
@@ -103,9 +104,9 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
 object Proposition{
   val trueThatRe = """Is it true that (.*?)?""".r
 
-  val extractor = new Extractor("definitions")
+
   //val extractor = new Extractor("", "")
-  def fromTrueThatQuestion(question:String) = {
+  def fromTrueThatQuestion(question:String, extractor:Extractor) = {
     val trueThatRe(string:String) = question
     val extractions = extractor.extract(string, "definition", () => "question")//OpenIEWrapper.extract(string)
     val bestExtr = extractions.maxBy(extr => extr.tuple.text.split(" ").size)
@@ -123,20 +124,20 @@ object PropositionIO {
 
   def fromAssertion(assertion:Assertion) = {
 
-    def selectInstance(instances:Seq[Instance]) = {
+    def selectInstance(instances:Seq[Extraction]) = {
       println("Instance size: " + instances.size)
-      instances.maxBy(x => x.extraction.rel.text.size)
+      instances.maxBy(x => x.tuple.rel.text.split(" ").size)
     }
     val bestInstance = selectInstance(assertion.tuples)
-    val binTuple = BinaryRelationTuple.fromExtraction(bestInstance.extraction)
+    val binTuple = BinaryRelationTuple.fromExtraction(bestInstance)
     val tuple = from(binTuple.arg1, binTuple.relationText(), binTuple.arg2)
     new Proposition(Seq[Predicate](), new Predicate(tuple, 1.0))
   }
 
-  def fromFile(file:File) = QuestionIO.fromFile(file).map(fromAssertion(_))
+  def fromFile(file:File, extractor:Extractor) = QuestionIO.fromFile(file, extractor).map(fromAssertion(_))
 
   def main(args:Array[String]){
-    PropositionIO.fromFile(new File(args(0)))
+    PropositionIO.fromFile(new File(args(0)), OpenIEWrapper.instance(args(1)))
                  .foreach(proposition => println(proposition.toString))
 
     val testProposition = new Proposition(Seq[Predicate](), new Predicate(from("iron_nail", "conductorOf", "electricity", addLemmas = true), 1.0))
