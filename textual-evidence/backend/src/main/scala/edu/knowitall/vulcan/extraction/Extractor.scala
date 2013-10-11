@@ -8,7 +8,7 @@ import edu.knowitall.srlie.nested.SrlNestedExtraction.SrlNestedArgument
 import edu.knowitall.tool.tokenize.ClearTokenizer
 import edu.knowitall.tool.chunk.OpenNlpChunker
 import edu.knowitall.tool.postag.OpenNlpPostagger
-import edu.knowitall.tool.parse.ClearParser
+import edu.knowitall.tool.parse.{RemoteDependencyParser, ClearParser, DependencyParser}
 import edu.knowitall.tool.postag.ClearPostagger
 import edu.knowitall.chunkedextractor.Relnoun
 import edu.knowitall.srlie.SrlExtractor
@@ -18,11 +18,8 @@ import edu.knowitall.srlie.SrlExtractionInstance
 import edu.knowitall.tool.stem.Lemmatized
 import edu.knowitall.tool.chunk.ChunkedToken
 import edu.knowitall.tool.parse.graph.DependencyNode
-import edu.knowitall.tool.srl.Roles
+import edu.knowitall.tool.srl.{RemoteSrl, Roles, Srl, ClearSrl}
 import edu.knowitall.collection.immutable.Interval
-import edu.knowitall.tool.srl.Srl
-import edu.knowitall.tool.parse.DependencyParser
-import edu.knowitall.tool.srl.ClearSrl
 import edu.knowitall.srlie.SrlExtraction
 import edu.knowitall.srlie.confidence.SrlConfidenceFunction
 import edu.knowitall.chunkedextractor.confidence.RelnounConfidenceFunction
@@ -63,14 +60,22 @@ import org.slf4j.LoggerFactory
  * Runs OpenIE-4-like extractor over input sentences, generating Extractions, and
  * dumping them as Json
  */
-class Extractor(wordnetHome: String) {
+class Extractor(wordnetHome: String, parserServer:Option[String]=None, srlServer:Option[String]=None) {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
   private val idSeq = new AtomicInteger(0)
 
-  val parser = new ClearParser()
-  val srl = new ClearSrl()
+  //Create a new parser if a server isn't specified.
+  val parser = parserServer match {
+    case Some(url:String) => new RemoteDependencyParser(url)
+    case None => new ClearParser()
+  }
+  //Create a new Srl instance if a server isn't specified.
+  val srl = srlServer match {
+    case Some(url:String) => new RemoteSrl(url)
+    case None => new ClearSrl()
+  }
 
   val headExtractor = new HeadExtractor(wordnetHome)
 
@@ -285,7 +290,9 @@ object ExtractorMain {
                     val outputFile: Option[File] = None,
                     val corpus: Option[String] = None,
                     val batchId: Option[String] = None,
-                    val wnHome: Option[String] = None)
+                    val wnHome: Option[String] = None,
+                    val parserUrl:Option[String] = None,
+                    val srlUrl:Option[String] = None)
   {
     def getInputFiles() : Iterable[File] = inputFile match {
       case Some(file) => {
@@ -321,6 +328,14 @@ object ExtractorMain {
 
         opt("wordnet-home", "[required] location of wordnet on the local filesystem") { 
           (param, c) => c.copy(wnHome = Some(param))
+        },
+
+        opt("parser-url", "Clear dependency parser server url.") {
+          (param, c) => c.copy(parserUrl = Some(param))
+        },
+
+        opt("srl-url", "Clear srl parser server url.") {
+          (param, c) => c.copy(srlUrl = Some(param))
         }
       )
     }
@@ -351,7 +366,7 @@ object ExtractorMain {
     val batchId = config.batchId.getOrElse(
       new SimpleDateFormat("yyyy-MM-dd-HH-mm").format(new Date()))
 
-    val extractor = new Extractor(config.wnHome.get)
+    val extractor = new Extractor(config.wnHome.get, config.parserUrl, config.srlUrl)
 
     for(inputFile <- config.getInputFiles()) {
 
