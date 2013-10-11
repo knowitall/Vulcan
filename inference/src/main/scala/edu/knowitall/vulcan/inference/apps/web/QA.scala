@@ -22,6 +22,7 @@ import edu.knowitall.vulcan.inference.kb.{LogicRules, CNCategorizerKB, WordnetKB
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyWrapper
 import java.io.File
 import edu.knowitall.vulcan.inference.apps.PropositionVerifier
+import edu.knowitall.vulcan.inference.openie.OpenIEWrapper
 
 class QA() {
 
@@ -66,7 +67,14 @@ object QA {
   var mlnSolver:Solver = null
   var tupleSolver:Solver = null
   //var taf:TextualAxiomsFinder = null
-  def setup(endpoint:String, tuffyConfFile:String, rulesFile:String, tempDir:String, host:String, port:Int, numTuples:Int) = {
+  def setup(endpoint:String,
+            tuffyConfFile:String,
+            rulesFile:String,
+            tempDir:String,
+            host:String, port:Int,
+            numTuples:Int,
+            wordnetHome:String,
+            parserServer:String, srlServer:String) = {
     val taf = new TextualAxiomsFinder(endpoint, numTuples)
     val kbf = new KBAxiomFinder(new WordnetKB::new CNCategorizerKB(host, port)::Nil)
     val finders = Seq(taf, kbf)
@@ -75,8 +83,9 @@ object QA {
     val rules = LogicRules.fromFile(file)
     logger.info("# of rules loaded = %d".format(rules.size) )
     val verifier = new PropositionVerifier(finders, tuffy, rules, tempDir, host, port)
-    mlnSolver = new MLNTrueFalseSolver(verifier)
-    tupleSolver = new TupleMatchTrueFalseSolver(taf)
+    val extractor = OpenIEWrapper.instance(wordnetHome, Some(parserServer), Some(srlServer))
+    mlnSolver = new MLNTrueFalseSolver(verifier, extractor)
+    tupleSolver = new TupleMatchTrueFalseSolver(taf, extractor)
   }
 
   def wrapXML(string:String)  = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" + string
@@ -126,6 +135,9 @@ object QA {
     var tempDir = "./"
     var host = ""
     var cncport = 0
+    var wordnetHome = ""
+    var parserServer = ""
+    var srlServer = ""
 
     //var analsURL = ""
     val parser = new OptionParser() {
@@ -138,11 +150,14 @@ object QA {
       //arg("analsURL", "QA analyzer service url", {str => analsURL = str})
       opt("p", "port", "Port to run on.", {str => port = str.toInt})
       opt("n", "numTuples", "Number of top textual evidence tuples to use.", {str => numTuples = str.toInt})
+      opt("wnHome", "Wordnet home", {str => wordnetHome = str})
+      opt("parserServer", "Remote parser server for extractor.", {str => parserServer = str})
+      opt("srlServer", "Remote srl server for extractor.", {str => srlServer = str})
       //opt("l", "lemma", "Use lemmas instead of text", {str => lemma = str.toBoolean})
     }
 
     if(parser.parse(args)){
-      setup(endpoint, tuffyConfFile, rulesFile, tempDir, host, cncport, numTuples)
+      setup(endpoint, tuffyConfFile, rulesFile, tempDir, host, cncport, numTuples, wordnetHome, parserServer, srlServer)
       unfiltered.netty.Http(port).plan(intentVal).run()
     }else{
       println(parser.usage)

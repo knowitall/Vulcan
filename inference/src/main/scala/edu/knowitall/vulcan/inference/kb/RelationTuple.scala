@@ -10,13 +10,15 @@ package edu.knowitall.vulcan.inference.kb
 
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConversions._
-import edu.knowitall.openie.Extraction
+import edu.knowitall.vulcan.common.Extraction
+
 
 object BinaryRelationTuple{
 
   def fromExtraction(extraction:Extraction) = {
-    new BinaryRelationTuple(extraction.arg1.text, extraction.rel.text, extraction.arg2s.map(x => x.text).mkString(" "))
+    new BinaryRelationTuple(extraction.tuple.arg1.text, extraction.tuple.rel.text, extraction.tuple.arg2s.map(x => x.text).mkString(" "))
   }
+
 
 }
 
