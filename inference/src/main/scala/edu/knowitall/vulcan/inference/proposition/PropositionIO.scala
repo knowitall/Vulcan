@@ -141,6 +141,8 @@ object PropositionIO {
 
     val testProposition = new Proposition(Seq[Predicate](), new Predicate(from("iron_nail", "conductorOf", "electricity", addLemmas = true), 1.0))
 
+
+
   }
 
 
