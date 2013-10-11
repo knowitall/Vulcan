@@ -41,8 +41,8 @@ class Extraction (val patternName:String, val extractionParts:List[LinkedType]){
 }
 
 object Extractor{
-  def main(args:Array[String]){
 
+  def main(args:Array[String]){
     val taggerPath = args(0)
     val inputPath = args(1)
     val outputPath = args(2)
