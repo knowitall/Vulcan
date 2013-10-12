@@ -9,8 +9,8 @@ object ApplicationBuild extends Build {
 
   val appDependencies = Seq(
     // Add your project dependencies here,
-    "edu.washington.cs.knowitall" %% "vulcan-common" % "0.3-SNAPSHOT",
-    "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.3-SNAPSHOT",
+    "edu.washington.cs.knowitall" %% "vulcan-common" % "0.5-SNAPSHOT",
+    "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.5-SNAPSHOT",
     "org.apache.solr" % "solr-solrj" % "4.3.1"
   )
 
