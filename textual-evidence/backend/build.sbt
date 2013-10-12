@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "edu.washington.cs.knowitall.openie" %% "openie-models" % "1.1-SNAPSHOT",
   "edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.1",
   "edu.washington.cs.knowitall.chunkedextractor" %% "chunkedextractor" % "1.0.5",
-  "edu.washington.cs.knowitall" %% "vulcan-common" % "0.3-SNAPSHOT",
+  "edu.washington.cs.knowitall" %% "vulcan-common" % "0.5-SNAPSHOT",
   // for cli
   "com.github.scopt" %% "scopt" % "2.1",
   // solr indexing

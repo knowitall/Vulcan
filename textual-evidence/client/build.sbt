@@ -9,7 +9,7 @@ name := "vulcan-te-client"
 
 organization := "edu.washington.cs.knowitall"
 
-version := "0.3-SNAPSHOT"
+version := "0.5-SNAPSHOT"
 
 scalaVersion := "2.10.2"
 
@@ -22,11 +22,11 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   "play" %% "play" % "2.1.3",
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.0",
-  "edu.washington.cs.knowitall" %% "vulcan-common" % "0.3-SNAPSHOT",
+  "edu.washington.cs.knowitall" %% "vulcan-common" % "0.5-SNAPSHOT",
   "com.github.scopt" %% "scopt" % "2.1"
 ) 
 
-scalacOptions ++= Seq("-unchecked", "-deprecation")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 
 connectInput in run := true // forward stdin/out to fork
 

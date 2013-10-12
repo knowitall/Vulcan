@@ -20,6 +20,7 @@ import edu.knowitall.chunkedextractor.Relnoun
 import edu.knowitall.tool.chunk.ChunkedToken
 import edu.knowitall.tool.postag.PostaggedToken
 import edu.knowitall.tool.srl.ClearSrl
+import edu.knowitall.tool.srl.RemoteSrl
 import edu.knowitall.tool.stem.Lemmatized
 import edu.knowitall.tool.stem.MorphaStemmer
 
