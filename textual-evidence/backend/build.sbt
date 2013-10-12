@@ -1,3 +1,5 @@
+import aether.Aether._
+
 name := "vulcan-te-backend"
 
 organization := "edu.washington.cs.knowitall"
@@ -48,3 +50,19 @@ fork in run := true
 connectInput in run := true // forward stdin/out to fork
 
 homepage := Some(url("https://github.com/knowitall/Vulcan"))
+
+publishTo <<= version { (v: String) =>
+  val nexus = "http://trusty.cs.washington.edu:8082/nexus/content/repositories/"
+  if (v.trim.endsWith("SNAPSHOT"))
+    Some("snapshots" at nexus + "snapshots")
+  else
+    Some("releases" at nexus + "releases")
+}
+
+credentials += Credentials("Sonatype Nexus Repository Manager",
+                           "trusty.cs.washington.edu",
+                           "deployment",
+                           "knowit!")
+
+seq(aetherSettings: _*)
+
