@@ -104,12 +104,14 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
 object Proposition{
   val trueThatRe = """Is it true that (.*?)?""".r
 
-
+ val logger = LoggerFactory.getLogger(this.getClass)
   //val extractor = new Extractor("", "")
   def fromTrueThatQuestion(question:String, extractor:Extractor) = {
     val trueThatRe(string:String) = question
+    logger.info("Parsing question via open ie: " + string)
     val extractions = extractor.extract(string, "definition", () => "question")//OpenIEWrapper.extract(string)
     val bestExtr = extractions.maxBy(extr => extr.tuple.text.split(" ").size)
+    logger.info("Best extraction from open ie: " + bestExtr.tuple.text)
     val tuple = bestExtr.tuple
     val confidence = bestExtr.confidence
     val consequent = Predicate(tuple, confidence)
