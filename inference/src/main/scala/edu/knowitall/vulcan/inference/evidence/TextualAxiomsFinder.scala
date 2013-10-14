@@ -32,6 +32,8 @@ object TextualAxiomsFinder{
   }
 }
 
+
+
 class TextualAxiomsFinder(endpoint:String,
                           numTuples:Int) extends AxiomsFinder{
 
