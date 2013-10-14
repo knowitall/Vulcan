@@ -96,6 +96,7 @@ object QA {
         case Some(xml:String) => {
           qa.marshall(xml) match {
             case Some(parse:QuestionParse) => {
+              logger.info("Question parsed...")
               val answer = tupleSolver.solve(parse)
               ResponseString(qa.toXml(answer))
             }
