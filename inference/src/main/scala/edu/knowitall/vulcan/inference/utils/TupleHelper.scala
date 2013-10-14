@@ -34,14 +34,16 @@ object TupleHelper {
 
   def lemma(arg:Arg):String = arg match {
     case arg:TermsArg => lemma(arg.terms)
-    case _ => throw new Exception("Nested tuples not supported.")
+    case tuple:Tuple => "%s %s %s".format(lemma(tuple.arg1), lemma(tuple.rel.terms), tuple.arg2s.map(lemma(_)).mkString(" "))
+    case _ => throw new Exception("Unknown tuple type not supported.")
   }
 
   def text(terms:Seq[Term]):String = terms.map(_.text).mkString(" ")
 
   def text(arg:Arg):String = arg match {
     case arg:TermsArg => text(arg.terms)
-    case _ => throw new Exception("Nested tuples not supported.")
+    case tuple:Tuple => "%s %s %s".format(text(tuple.arg1), text(tuple.rel.terms), tuple.arg2s.map(text(_)).mkString(" "))
+    case _ => throw new Exception("Unknown tuple type not supported.")
   }
 
   def text(tuple:Tuple): String = "%s %s %s".format(text(tuple.arg1),

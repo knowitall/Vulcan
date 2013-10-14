@@ -10,7 +10,7 @@ package edu.knowitall.vulcan.inference.evidence
 
 
 import scala.collection.JavaConversions._
-import edu.knowitall.vulcan.common.{Arg, Tuple}
+import edu.knowitall.vulcan.common.{Extraction, Arg, Tuple}
 import edu.knowitall.vulcan.evidence.TextualEvidenceClient
 import edu.knowitall.vulcan.evidence.query.{TupleQuery, QueryBuilder}
 import edu.knowitall.vulcan.inference.proposition.Proposition
@@ -72,21 +72,31 @@ class TextualAxiomsFinder(endpoint:String,
     //val queries = fieldQueries(proposition.consequent.tuple).map(QueryBuilder.and(TupleQuery.partialMatchQuery()))
     val propTuple = proposition.consequent.tuple
     val variants = TupleHelper.wildcardVaiants(propTuple)
-    distinct(find(propTuple) ++ variants.flatMap(variant => find(variant)))
+    distinct(find(propTuple))// ++ variants.flatMap(variant => find(variant)))
   }
 
 
+  def sentenceid(extraction:Extraction) = {
+    logger.info("%s\t%s".format(extraction.sentence, extraction.tuple.text))
+    extraction.id
+  }
+
   def find(propTuple: Tuple): Seq[Axiom] = {
-    val query = QueryBuilder.and(TupleQuery.matchAnyQuery(propTuple), corpusQuery)
+    val query = TupleQuery.matchAnyQuery(propTuple)//QueryBuilder.and(TupleQuery.matchAnyQuery(propTuple), corpusQuery)
     logger.info("Query: " + query)
     val resultsPage = client.query(query, start = 0, rows = numTuples)
+    logger.info("Number of results: " + resultsPage.results.size)
     import Axiom._
     resultsPage.results
       .sortBy(-_.score)
-      .map(result => {
-      val axiom = fromPredicate(Predicate(result.extraction.tuple, result.score), result.score)
-      logger.info("%s = %.2f".format(TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes = false), axiom.score()))
-      axiom
-    })
+      .groupBy(result => sentenceid(result.extraction))
+      .flatMap(resultsGrp => {
+      val sid = resultsGrp._1
+      resultsGrp._2.map(result=> {
+        val axiom = fromPredicate(Predicate(result.extraction.tuple, result.score), result.score)
+        logger.info("%s\t%s = %.2f".format(sid, TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes = false), axiom.score()))
+        axiom
+      })
+    }).toSeq
   }
 }
