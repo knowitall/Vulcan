@@ -38,11 +38,11 @@ libraryDependencies ++= Seq(
     //
     //Vulcan common lib
     //
-    "edu.washington.cs.knowitall" %% "vulcan-common" % "0.2-SNAPSHOT",
+    "edu.washington.cs.knowitall" %% "vulcan-common" % "0.5-SNAPSHOT",
     //
     //Textual Evidence Finder
     //
-    "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.2",
+    "edu.washington.cs.knowitall" %% "vulcan-te-client" % "0.5-SNAPSHOT",
     //
     //
     //
