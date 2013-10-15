@@ -16,7 +16,6 @@ import edu.knowitall.vulcan.inference.openie.OpenIEWrapper
 import edu.knowitall.vulcan.inference.kb._
 import java.io.File
 import edu.knowitall.vulcan.inference.kb.Predicate
-import edu.knowitall.openie.Instance
 import scala.Some
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
 import edu.knowitall.vulcan.inference.utils.TupleHelper
@@ -33,7 +32,6 @@ object QuestionIO{
   val keys = Set[String]("(A)", "(B)", "(C)", "(D)")
 
   def fromLine(line:String, extractor:Extractor) = {
-    import OpenIEWrapper._
     val splits = line.split("\t")
     val qid = splits(0)
     def createQuestion = new Question(splits(0), splits(1), splits(2).toInt, splits(3),
