@@ -18,8 +18,8 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   // openie extraction dependencies
   "edu.washington.cs.knowitall.openie" %% "openie-models" % "1.1-SNAPSHOT",
-  "edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.1",
-  "edu.washington.cs.knowitall.chunkedextractor" %% "chunkedextractor" % "1.0.5",
+  "edu.washington.cs.knowitall.srlie" %% "srlie" % "1.0.2-SNAPSHOT",
+  "edu.washington.cs.knowitall.chunkedextractor" %% "chunkedextractor" % "1.0.7-SNAPSHOT",
   "edu.washington.cs.knowitall" %% "vulcan-common" % "0.5-SNAPSHOT",
   // for cli
   "com.github.scopt" %% "scopt" % "2.1",
@@ -32,9 +32,12 @@ libraryDependencies ++= Seq(
   //
   "edu.washington.cs.knowitall.common-scala" %% "common-scala" % "1.1.2",
   // headword dependendcies
-  "edu.washington.cs.knowitall.nlptools" %% "nlptools-headword-uw" % "2.4.4-SNAPSHOT",
   "edu.washington.cs.knowitall.nlptools" %% "nlptools-core" % "2.4.4-SNAPSHOT",
-  "edu.washington.cs.knowitall.nlptools" %% "nlptools-sentence-opennlp" % "2.4.3"
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-headword-uw" % "2.4.4-SNAPSHOT",
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-tokenize-clear" % "2.4.4-SNAPSHOT",
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-chunk-opennlp" % "2.4.4-SNAPSHOT",
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-postag-opennlp" % "2.4.4-SNAPSHOT",
+  "edu.washington.cs.knowitall.nlptools" %% "nlptools-sentence-opennlp" % "2.4.4-SNAPSHOT"
 ) 
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
