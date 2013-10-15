@@ -1,9 +1,6 @@
 package edu.knowitall.vulcan.inference.openie
 
 
-import edu.knowitall.tool.parse.ClearParser
-import edu.knowitall.tool.srl.ClearSrl
-import edu.knowitall.openie.{OpenIE, Instance}
 import edu.knowitall.vulcan.extraction.Extractor
 
 object OpenIEWrapper{
