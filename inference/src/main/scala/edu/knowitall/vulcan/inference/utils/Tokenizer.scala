@@ -36,9 +36,9 @@ object Tokenizer {
     StringUtil.removeNonAlphaNumeric(string)
       .toLowerCase
       .split(" ")
-      //.filter(word => !filter.isStopword(word)) // Note stemmed version might be a stopped word
+      .filter(word => !filter.isStopword(word)) // Note stemmed version might be a stopped word
       .map(word => stem(word))//Stemmer.normalize(word))
-      //.filter(word => !filter.isStopword(word) && word.trim.size > 0)
+      .filter(word => !filter.isStopword(word) && word.trim.size > 0)
   } //Doing check again.
   //.filter(word => !StopwordsFilter.isStopword(word))
 

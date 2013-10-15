@@ -15,5 +15,5 @@ object StringUtil {
   val notAlphaRe = """[^a-zA-Z ]""".r
   def isNotAlphabetic(text: String) = notAlphaRe.findFirstMatchIn(text) != None
   def removeContentWithinParentheses(text:String) = text.replaceAll("""\(.*?\)""", " ")
-  def removeNonAlphaNumeric(text:String) = text.replaceAll("""[^0-9a-zA-Z ?.]""", " ")
+  def removeNonAlphaNumeric(text:String) = text.replaceAll("""[^0-9a-zA-Z ?]""", " ")
 }

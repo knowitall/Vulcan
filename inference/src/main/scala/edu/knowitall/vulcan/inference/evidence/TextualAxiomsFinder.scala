@@ -9,16 +9,16 @@ package edu.knowitall.vulcan.inference.evidence
  */
 
 
-import scala.collection.JavaConversions._
-import edu.knowitall.vulcan.common.{Extraction, Arg, Tuple}
+import edu.knowitall.vulcan.common.{Extraction, Tuple}
 import edu.knowitall.vulcan.evidence.TextualEvidenceClient
-import edu.knowitall.vulcan.evidence.query.{TupleQuery, QueryBuilder}
+import edu.knowitall.vulcan.evidence.query.TupleQuery
 import edu.knowitall.vulcan.inference.proposition.Proposition
-import edu.knowitall.vulcan.inference.kb.{WeightedRule, Axiom, Predicate}
+import edu.knowitall.vulcan.inference.kb.{Axiom, Predicate}
 import org.slf4j.LoggerFactory
 import edu.knowitall.vulcan.inference.utils.TupleHelper
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyFormatter
 import scala.collection.immutable.HashMap
+import edu.knowitall.vulcan.inference.entailment.EntailmentScorer
 
 object TextualAxiomsFinder{
 
@@ -43,6 +43,8 @@ class TextualAxiomsFinder(endpoint:String,
 
   val corpusQuery = TupleQuery.corpusQuery(Seq("glossary", "studyguide", "clueweb"))
 
+  val scorer = new EntailmentScorer
+
   def fieldQueries(tuple:Tuple) = {
     val arg1 = tuple.arg1.text
     val rel = tuple.rel.text
@@ -58,11 +60,8 @@ class TextualAxiomsFinder(endpoint:String,
     var map = new HashMap[String, Axiom]
     axioms.foreach(x => {
       val key = x.consequent.tuple.text
-      println("Considering key: " + key)
       if(!map.contains(key)){
         map += key -> x
-      }else{
-        println("Ignoring: " + key)
       }
     })
     map.values.toSeq.sortBy(-_.score)
@@ -77,8 +76,8 @@ class TextualAxiomsFinder(endpoint:String,
 
 
   def sentenceid(extraction:Extraction) = {
-    logger.info("%s\t%s".format(extraction.sentence, extraction.tuple.text))
-    extraction.id
+    logger.info("%s\t%s".format(extraction.sentence, extraction.tuple))
+    extraction.sentence
   }
 
   def find(propTuple: Tuple): Seq[Axiom] = {
@@ -92,9 +91,14 @@ class TextualAxiomsFinder(endpoint:String,
       .groupBy(result => sentenceid(result.extraction))
       .flatMap(resultsGrp => {
       val sid = resultsGrp._1
-      resultsGrp._2.map(result=> {
-        val axiom = fromPredicate(Predicate(result.extraction.tuple, result.score), result.score)
-        logger.info("%s\t%s = %.2f".format(sid, TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes = false), axiom.score()))
+      val results = resultsGrp._2
+      val average = if(results.size > 0) results.map(result => {
+        0.25 * scorer.scoreText(result.extraction.tuple, propTuple)
+        + 0.75 * scorer.scoreText(result.extraction.sentence, propTuple.text)
+      }).sum/results.size.toDouble else 0.0
+      results.map(result=> {
+        val axiom = fromPredicate(Predicate(result.extraction.tuple, average), average)
+        //logger.info("%s\t%s = %.4f".format(sid, TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes = false), axiom.score()))
         axiom
       })
     }).toSeq

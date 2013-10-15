@@ -20,13 +20,36 @@ class EntailmentScorer {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  def scoreText(t:Tuple, h:Tuple) = {
-    val ttoks = Tokenizer.tokenize(t.text).toSet
-    val htoks = Tokenizer.tokenize(h.text).toSet
+  def scoreText(t:Tuple, h:Tuple):Double = {
+    val ttext = t.text
+    val htext = h.text
+    scoreText(ttext, htext)
+    //hypothesisLikelihood(ttext, htext)
+  }
+
+  def hypothesisLikelihood(ttext:String, htext:String):Double = {
+    val ttoks = Tokenizer.tokenize(ttext).toSeq
+    val htoks = Tokenizer.tokenize(htext).toSeq
+    val lambda = 0.7
+
+    val logsum = htoks.map(htok => {
+      val ql = if(ttoks.contains(htok)) 1.0/(ttoks.size.toDouble + 10.0) else 0.0
+      val p = (1-lambda) * 0.01 + lambda * ql
+      Math.log(p)
+    }).sum
+    Math.exp(logsum)
+  }
+
+
+  def scoreText(ttext: String, htext: String): Double = {
+    //hypothesisLikelihood(ttext, htext)
+    val ttoks = Tokenizer.tokenize(ttext).toSeq
+    val htoks = Tokenizer.tokenize(htext).toSeq
     val common = ttoks.intersect(htoks).size
     val union = (htoks ++ ttoks).size
-    val score = if(union > 0) common.toDouble/union else 0.0
-    logger.info("%s => %s = %.2f".format(t.text, h.text, score))
+    val score = if (union > 0) common.toDouble / union else 0.0
+    //logger.info("%s => %s = %.2f".format(ttext, htext, score))
+    //logger.info("Common: %s".format(htoks intersect ttoks))
     score
   }
 
