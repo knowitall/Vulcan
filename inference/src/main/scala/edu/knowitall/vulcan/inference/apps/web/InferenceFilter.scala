@@ -11,9 +11,7 @@ package edu.knowitall.vulcan.inference.apps.web
 import org.slf4j.LoggerFactory
 import unfiltered.request.{GET, Path, HttpRequest}
 import org.apache.commons.lang.StringEscapeUtils
-import edu.knowitall.openie.OpenIE
-import edu.knowitall.tool.parse.ClearParser
-import edu.knowitall.tool.srl.ClearSrl
+
 import scala.xml.Elem
 import edu.knowitall.vulcan.inference.kb._
 import edu.knowitall.vulcan.inference.utils.TupleHelper._
@@ -54,7 +52,7 @@ object InferenceFilter {
 
 
 
-  var openie:OpenIE = null
+  //var openie:OpenIE = null
 
 
   val tuffyArgs = Seq("-i ")
@@ -62,7 +60,7 @@ object InferenceFilter {
 
 
   def setupOpenIe() = {
-    if(openie == null) openie = new OpenIE(new ClearParser, new ClearSrl)
+    //if(openie == null) openie = new OpenIE(new ClearParser, new ClearSrl)
   }
 
   def response(query:String, resultsDiv:Elem):String = {
