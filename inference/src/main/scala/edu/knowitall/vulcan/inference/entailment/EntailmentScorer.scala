@@ -11,7 +11,7 @@ package edu.knowitall.vulcan.inference.entailment
 
 import scala.collection.JavaConversions._
 import edu.knowitall.vulcan.common._
-import edu.knowitall.vulcan.inference.utils.Tokenizer
+import edu.knowitall.vulcan.inference.utils.{TupleHelper, Tokenizer}
 import org.slf4j.LoggerFactory
 import edu.knowitall.vulcan.common.Term
 import edu.knowitall.vulcan.common.TermsArg
@@ -21,8 +21,8 @@ class EntailmentScorer {
   val logger = LoggerFactory.getLogger(this.getClass)
 
   def scoreText(t:Tuple, h:Tuple):Double = {
-    val ttext = t.text
-    val htext = h.text
+    val ttext = TupleHelper.lemma(t)
+    val htext = TupleHelper.lemma(h)
     scoreText(ttext, htext)
     //hypothesisLikelihood(ttext, htext)
   }
@@ -46,10 +46,10 @@ class EntailmentScorer {
     val ttoks = Tokenizer.tokenize(ttext).toSeq
     val htoks = Tokenizer.tokenize(htext).toSeq
     val common = ttoks.intersect(htoks).size
-    val union = (htoks ++ ttoks).size
+    val union = htoks.size.toDouble//(htoks ++ ttoks).size
     val score = if (union > 0) common.toDouble / union else 0.0
-    //logger.info("%s => %s = %.2f".format(ttext, htext, score))
-    //logger.info("Common: %s".format(htoks intersect ttoks))
+    logger.info("Evidence(%s) => Target(%s) = %.2f".format(ttext, htext, score))
+    logger.info("Common: %s".format(htoks intersect ttoks))
     score
   }
 
@@ -82,7 +82,6 @@ class EntailmentScorer {
       termScore(tterms, hterms)
     }
     0.33 * argMatch(t.arg1, h.arg1) + 0.33 * relMatch(t.rel, h.rel) + 0.33 * arg2sMatch(t.arg2s, h.arg2s)
-
   }
 
 }

@@ -81,15 +81,15 @@ abstract class TrueFalseSolver extends Solver{
 class TupleMatchTrueFalseSolver(taf:TextualAxiomsFinder, extractor:Extractor) extends TrueFalseSolver {
 
   def findSupports(question: String, topn:Int=5) = {
-    val proposition = Proposition.fromTrueThatQuestion(question, extractor)
-    taf.find(proposition).take(topn).map(axiom => support(axiom))
+    val (questionText, proposition) = Proposition.fromTrueThatQuestion(question, extractor)
+    taf.find(proposition, Some(questionText)).take(topn).map(axiom => support(axiom))
 
   }
 }
 
 class MLNTrueFalseSolver(verifier:PropositionVerifier, extractor:Extractor) extends TrueFalseSolver {
   def findSupports(question:String, topn:Int = 10) = {
-    val proposition = Proposition.fromTrueThatQuestion(question,extractor)
+    val (questionText, proposition) = Proposition.fromTrueThatQuestion(question,extractor)
     verifier.verify(proposition) match {
       case Some(results:InferenceResults) => {
         InferenceUtils.toAxioms(results).map(support(_))

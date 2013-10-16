@@ -16,7 +16,6 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.kb.{Axiom, Predicate}
 import org.slf4j.LoggerFactory
 import edu.knowitall.vulcan.inference.utils.TupleHelper
-import edu.knowitall.vulcan.inference.mln.tuffyimpl.TuffyFormatter
 import scala.collection.immutable.HashMap
 import edu.knowitall.vulcan.inference.entailment.EntailmentScorer
 
@@ -67,20 +66,20 @@ class TextualAxiomsFinder(endpoint:String,
     map.values.toSeq.sortBy(-_.score)
   }
 
-  def find(proposition:Proposition) = {
+  def find(proposition:Proposition, propText:Option[String] = None) = {
     //val queries = fieldQueries(proposition.consequent.tuple).map(QueryBuilder.and(TupleQuery.partialMatchQuery()))
     val propTuple = proposition.consequent.tuple
     val variants = TupleHelper.wildcardVaiants(propTuple)
-    distinct(find(propTuple))// ++ variants.flatMap(variant => find(variant)))
+    distinct(find(propTuple, propText))// ++ variants.flatMap(variant => find(variant)))
   }
 
 
   def sentenceid(extraction:Extraction) = {
-    logger.info("%s\t%s".format(extraction.sentence, extraction.tuple))
+    //logger.info("%s\t%s".format(extraction.sentence, extraction.tuple))
     extraction.sentence
   }
 
-  def find(propTuple: Tuple): Seq[Axiom] = {
+  def find(propTuple: Tuple, questionText:Option[String]): Seq[Axiom] = {
     val query = TupleQuery.matchAnyQuery(propTuple)//QueryBuilder.and(TupleQuery.matchAnyQuery(propTuple), corpusQuery)
     logger.info("Query: " + query)
     val resultsPage = client.query(query, start = 0, rows = numTuples)
@@ -92,9 +91,23 @@ class TextualAxiomsFinder(endpoint:String,
       .flatMap(resultsGrp => {
       val sid = resultsGrp._1
       val results = resultsGrp._2
+      val text = questionText match {
+        case Some(x:String) => x
+        case None => TupleHelper.lemma(propTuple)
+      }
+      //println("Sentence text: " + text)
       val average = if(results.size > 0) results.map(result => {
-        0.25 * scorer.scoreText(result.extraction.tuple, propTuple)
-        + 0.75 * scorer.scoreText(result.extraction.sentence, propTuple.text)
+
+        val tupleScore = 0.25 * scorer.scoreText(result.extraction.tuple, propTuple)
+        val sentScore = 0.75 * scorer.scoreText(result.extraction.sentence, text)
+        val totalScore = tupleScore + sentScore
+        logger.info("")
+        logger.info("Tuple: " + result.extraction.tuple.text + " score = " + tupleScore)
+        logger.info("Sent: " + result.extraction.sentence + " score = " + sentScore)
+        logger.info("Total: " + totalScore)
+        logger.info("")
+        logger.info("")
+        totalScore
       }).sum/results.size.toDouble else 0.0
       results.map(result=> {
         val axiom = fromPredicate(Predicate(result.extraction.tuple, average), average)

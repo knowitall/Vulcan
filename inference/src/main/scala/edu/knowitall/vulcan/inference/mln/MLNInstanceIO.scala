@@ -21,11 +21,18 @@ import edu.knowitall.vulcan.inference.mln.MLNInstance
 object MLNInstanceIO{
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  def entityArg = TermsArg(Seq(Term("entity", Some("entity"))))
+  def entityArg1 = TermsArg(Seq(Term("arg1", Some("arg1"))))
 
-  def entityRelation = Relation(Seq(Term("entity", Some("entity"))))
+  def entityArg2 = TermsArg(Seq(Term("arg2", Some("arg2"))))
 
-  def toDefinitionTuple(tuple:Tuple) = new Tuple(entityArg, entityRelation, Seq(entityArg))
+  def entityRelation = Relation(Seq(Term("rel", Some("rel"))))
+
+  //def entityArg = TermsArg(Seq(Term("entity", Some("entity"))))
+
+  //def entityRelation = Relation(Seq(Term("entity", Some("entity"))))
+
+
+  def toDefinitionTuple(tuple:Tuple) = new Tuple(entityArg1, entityRelation, Seq(entityArg2))
 
   def toDefinitionPredicate(predicate:Predicate) = new Predicate(toDefinitionTuple(predicate.tuple), 1.0)
 

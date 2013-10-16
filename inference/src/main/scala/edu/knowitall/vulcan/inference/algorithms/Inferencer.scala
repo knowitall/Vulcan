@@ -21,6 +21,7 @@ import scala.Some
 import edu.knowitall.vulcan.inference.mln.tuffyimpl.InferenceResults
 import edu.knowitall.vulcan.inference.evidence.Evidence
 import org.slf4j.LoggerFactory
+import scala.collection.immutable.HashMap
 
 trait Inferencer {
 
@@ -90,7 +91,7 @@ object BidiSearchInferencer{
       case Some(results:InferenceResults) =>{
         val axioms = toAxioms(results)
         logger.info("Found %d new facts after full inference.".format(axioms.size))
-        axioms.foreach(axiom => logger.info(TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes=true)))
+        axioms.sortBy(-_.score()).foreach(axiom => logger.info(TuffyFormatter.exportRule(axiom, withWeights=true, withQuotes=true)))
         supportingAxiom(proposition, axioms, threshold=0.01) match {
           case Some(axiom:Axiom) => logger.info("Proposition's marginal: " + TuffyFormatter.exportRule(axiom, withWeights=false, withQuotes=true))
           case None => logger.info("Proposition is not supported by inference.")
@@ -154,7 +155,8 @@ class BidiSearchInferencer(entailment:EntailmentScorer,
               case Some(x:Axiom) => toInferenceResults(x)
               case None => {
                 logger.info("Proposition not supported by new facts. Finding gaps...")
-                val expanded = new Evidence(evidence.proposition, evidence.axioms ++ newAxioms, evidence.rules)
+                val queryAsPrioredEvidence = Axiom.fromPredicate(evidence.proposition.consequent, 0.01) :: Nil
+                val expanded = new Evidence(evidence.proposition, evidence.axioms ++ newAxioms ++ queryAsPrioredEvidence, evidence.rules)
                 val bridgeRules = find_and_bridge_gaps(t, expanded)
                 logger.info("Found %d bridges".format(bridgeRules.size))
                 bridgeRules.foreach(rule => logger.info("Bridge: %s".format(TuffyFormatter.exportRule(rule, withWeights = true, withQuotes = true))))
@@ -211,15 +213,41 @@ class BidiSearchInferencer(entailment:EntailmentScorer,
     logger.info("Found %d plausible facts.".format(plausible.size))
     def findGaps(forward:Seq[Axiom], backward:Seq[Axiom], topn:Int = 100): Seq[Gap] = {
       import Crossable._
-      (forward x backward).map(pair => {
-        val score = entailment.score(pair._1.consequent.tuple, pair._2.consequent.tuple) * (pair._1.score()  + pair._2.score())/2.0
+      import TupleHelper._
+      (forward x backward).filter(pair => !TupleHelper.identical(pair._1.consequent.tuple, pair._2.consequent.tuple))
+                          .filter(pair => !hasEmptyArg(pair._1.consequent.tuple) && !hasEmptyArg(pair._2.consequent.tuple))
+                          .map(pair => {
+        val score = entailment.scoreText(pair._1.consequent.tuple, pair._2.consequent.tuple) //* (pair._1.score()  + pair._2.score())/2.0
         Gap(pair._1.consequent, pair._2.consequent, score)
-      }).toSeq.sortBy(-_.score).take(topn)
+      }).toSeq
+        .sortBy(-_.score)
+        .take(topn)
+    }
+    def distinct(axioms:Seq[Axiom]) = {
+      val map = new scala.collection.mutable.HashMap[String, Axiom]
+      def key(axiom:Axiom) = axiom.consequent.tuple.text
+      axioms.foreach(axiom => {
+        val k = key(axiom)
+        if(!map.contains(k)) map += k -> axiom
+      })
+      map.values.toSeq.sortBy(-_.score)
     }
     //evidence.axioms ++ (
-    val gaps = findGaps(evidence.axioms ++ (Axiom.fromTuple(t.consequent.tuple)::Nil), plausible)
+    val gaps = findGaps(evidence.axioms ++ (Axiom.fromTuple(t.consequent.tuple)::Nil), distinct(plausible))
     //gaps.foreach(gap => logger.info("Gap: " + TuffyFormatter.exportPredicate(gap.f) + " => " + TuffyFormatter.exportPredicate(gap.b) + " = " + gap.score))
-    gaps.map(gap => new WeightedRule(Seq(gap.f), gap.b, gap.score))
+
+    def toQuotedPred(pred:Predicate):Predicate = {
+      if(pred.tuple.arg1.text.contains("\"")) return pred
+      val arg1 = """"%s"""".format(pred.tuple.arg1.text)
+      val arg2s = """"%s"""".format(pred.tuple.arg2s.map(_.text).mkString(" "))
+      val rel = """"%s"""".format(pred.tuple.rel.text)
+      return Predicate(TupleHelper.fromLemmas(arg1, rel, arg2s), pred.score())
+    }
+    gaps.map(gap => {
+      val f = toQuotedPred(gap.f)
+      val b = toQuotedPred(gap.b)
+      new WeightedRule(Seq(f), b, gap.score)
+    })
   }
 
 

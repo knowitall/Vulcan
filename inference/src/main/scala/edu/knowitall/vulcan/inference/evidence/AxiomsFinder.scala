@@ -11,5 +11,5 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 import edu.knowitall.vulcan.inference.kb.Axiom
 
 abstract class AxiomsFinder {
-  def find(proposition:Proposition): Seq[Axiom]
+  def find(proposition:Proposition, propText:Option[String] = None): Seq[Axiom]
 }

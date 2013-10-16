@@ -15,6 +15,6 @@ import edu.knowitall.vulcan.inference.proposition.Proposition
 
 class KBAxiomFinder(kbs:Seq[KB]) extends AxiomsFinder {
 
-  def find(proposition: Proposition) = kbs.flatMap(kb => kb.matchingEntries(proposition.consequent.tuple))
+  def find(proposition: Proposition, propText:Option[String] = None) = kbs.flatMap(kb => kb.matchingEntries(proposition.consequent.tuple))
 
 }

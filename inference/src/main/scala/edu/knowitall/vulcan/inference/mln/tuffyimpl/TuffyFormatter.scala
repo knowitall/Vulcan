@@ -99,7 +99,7 @@ object TuffyFormatter{
   }
 
   def exportEvidenceFile(instance:MLNInstance, file:File) = {
-    val output = exportRules(instance.evidence, false, true)
+    val output = exportRules(instance.evidence, true, true)//was false true before.
     val writer = new PrintWriter(file)
     writer.println(output)
     writer.close

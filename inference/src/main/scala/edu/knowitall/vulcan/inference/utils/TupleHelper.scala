@@ -21,6 +21,8 @@ object TupleHelper {
   def fromResult(string: String) = {
 
   }
+  def emptyArg(arg:Arg) = if(arg.text.trim.size < 1) true else false
+  def hasEmptyArg(tuple:Tuple) = emptyArg(tuple.arg1) || tuple.arg2s.exists(emptyArg(_))
 
   def identical(a: Tuple, b: Tuple) = {
     a.arg1.text.replaceAll("\"", " ").equalsIgnoreCase(b.arg1.text.replaceAll("\"", " ")) &&

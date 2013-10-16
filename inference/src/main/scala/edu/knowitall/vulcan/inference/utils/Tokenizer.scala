@@ -23,7 +23,7 @@ object Tokenizer {
 
   val stemmer = new MorphaStemmer
 
-  def stem(string:String) = MorphaStemmer.stem(string)
+  def stem(string:String) = if(string.equals("thicker")) "thick" else if(string.equals("warmer")) "warm" else MorphaStemmer.stem(string)
 
   val tokenizationCache = new mutable.HashMap[String, Seq[String]]
   def tokenize(string:String) = {

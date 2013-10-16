@@ -100,7 +100,7 @@ class Proposition(aseq:Seq[Predicate], c:Predicate) extends Rule {
 }
 
 object Proposition{
-  val trueThatRe = """Is it true that (.*?)?""".r
+  val trueThatRe = """Is it true that (.*?)\?""".r
 
  val logger = LoggerFactory.getLogger(this.getClass)
   //val extractor = new Extractor("", "")
@@ -113,7 +113,7 @@ object Proposition{
     val tuple = bestExtr.tuple
     val confidence = bestExtr.confidence
     val consequent = Predicate(tuple, confidence)
-    new Proposition(Seq[Predicate](), consequent)
+    (string, new Proposition(Seq[Predicate](), consequent))
   }
 }
 
